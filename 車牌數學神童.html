@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>車牌數學神童 v6.0 (本地記憶版)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0; padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        .container {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 95%;
+            max-height: 98vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: auto; 
+        }
+
+        .header-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; }
+        h1 { display: none; }
+
+        .game-info { display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+
+        .difficulty-badge {
+            background-color: #eee;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .license-plate {
+            background-color: #fcfcfc;
+            border: 2px solid #333;
+            border-radius: 6px;
+            padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 2px;
+            cursor: pointer;
+        }
+        
+        .license-plate::before {
+            content: "Math Game";
+            display: block;
+            font-size: 8px;
+            color: #666;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .numbers {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 10px;
+            line-height: 1.1;
+            padding-bottom: 5px;
+        }
+
+        .input-area { margin-top: 5px; }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 6px;
+            font-size: 1.3rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            text-align: center;
+            background-color: #fafafa;
+            color: #333;
+        }
+        input:focus { border-color: #007bff; outline: none; }
+
+        #result-container {
+            min-height: 35px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 3px 0;
+            gap: 3px;
+        }
+
+        #result { font-size: 0.9rem; font-weight: bold; line-height: 1.2; }
+        .success { color: #198754; }
+        .error { color: #dc3545; }
+        .info { color: #0d6efd; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.4);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+            font-weight: bold;
+        }
+        .btn-upload.fix-mode {
+            background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
+            box-shadow: 0 2px 8px rgba(255, 94, 98, 0.4);
+        }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+        .btn-upload:active { transform: scale(0.95); }
+
+        .keypad-container {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            margin-top: 5px;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .keypad button {
+            padding: 8px 0;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            touch-action: manipulation;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+            background-color: #f8f9fa;
+        }
+        .keypad button:active { transform: translateY(2px); box-shadow: none; }
+
+        .btn-num { color: #212529; font-size: 1.3rem !important; background-color: #fff !important; border: 1px solid #eee !important; }
+        .btn-op { background-color: #e2e6ea !important; color: #0d6efd; }
+        .btn-func { background-color: #e2e6ea !important; color: #6c757d; font-size: 0.9rem !important; }
+        .btn-del { background-color: #ffeef0 !important; color: #dc3545; }
+        .btn-zero { grid-column: span 2; }
+        .btn-eq { background-color: #0d6efd !important; color: white; grid-column: span 2; }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1.5fr;
+            gap: 6px;
+            margin-bottom: 2px;
+            flex: 0 0 auto;
+        }
+
+        .main-btn {
+            padding: 10px 2px;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .btn-new { background-color: #6c757d; }
+        .btn-custom { background-color: #6f42c1; }
+        .btn-check { background-color: #198754; font-size: 1rem; }
+        .btn-solve { background-color: #ffc107; color: #333; }
+
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #fff; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #aaa; }
+
+        .custom-input {
+            width: 100%; box-sizing: border-box; padding: 10px; font-size: 1.8rem; letter-spacing: 8px;
+            text-align: center; border: 2px solid #6f42c1; border-radius: 10px; margin: 15px 0;
+            font-family: 'Courier New', monospace; background: #f8f0ff;
+        }
+
+        .btn-fix-solution {
+            background: transparent; border: 1px solid #dc3545; color: #dc3545; padding: 6px 12px;
+            border-radius: 20px; font-size: 0.85rem; margin-top: 15px; cursor: pointer;
+            font-weight: bold; transition: all 0.2s;
+        }
+        .btn-fix-solution:hover { background: #dc3545; color: white; }
+
+        .loader {
+            border: 3px solid #f3f3f3; border-top: 3px solid #333; border-radius: 50%; width: 20px; height: 20px;
+            animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .upload-icon { font-size: 2.5rem; margin-bottom: 5px; display: block; }
+        .upload-success { color: #198754; animation: bounce 0.5s; }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+
+        /* 已破解難度 */
+        .diff-solved { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <div class="game-info">
+            <span id="difficultyBadge" class="difficulty-badge">分析中...</span>
+        </div>
+        
+        <div class="license-plate" onclick="openCustomModal()">
+            <div class="numbers" id="plateNumbers">----</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userFormula" placeholder="輸入算式..." autocomplete="off" readonly>
+        </div>
+
+        <div id="result-container">
+            <div id="result"></div>
+            <button id="btnUpload" class="btn-upload" onclick="openUploadModal()">🚀 上傳神解</button>
+        </div>
+    </div>
+
+    <div class="keypad-container">
+        <div class="keypad">
+            <button class="btn-func" onclick="insert('(')">(</button>
+            <button class="btn-func" onclick="insert(')')">)</button>
+            <button class="btn-func" onclick="insert('^')">^</button>
+            <button class="btn-func" onclick="insert('!')">!</button>
+            
+            <button class="btn-func" onclick="insert('√(')">√</button>
+            <button class="btn-del" onclick="clearInput()">C</button>
+            <button class="btn-del" onclick="backspace()">⌫</button>
+            <button class="btn-op" onclick="insert('/')">÷</button>
+            
+            <button class="btn-num" onclick="insert('7')">7</button>
+            <button class="btn-num" onclick="insert('8')">8</button>
+            <button class="btn-num" onclick="insert('9')">9</button>
+            <button class="btn-op" onclick="insert('*')">×</button>
+            
+            <button class="btn-num" onclick="insert('4')">4</button>
+            <button class="btn-num" onclick="insert('5')">5</button>
+            <button class="btn-num" onclick="insert('6')">6</button>
+            <button class="btn-op" onclick="insert('-')">-</button>
+            
+            <button class="btn-num" onclick="insert('1')">1</button>
+            <button class="btn-num" onclick="insert('2')">2</button>
+            <button class="btn-num" onclick="insert('3')">3</button>
+            <button class="btn-op" onclick="insert('+')">+</button>
+            
+            <button class="btn-num btn-zero" onclick="insert('0')">0</button>
+            <button class="btn-eq" onclick="insert('=')">=</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="main-btn btn-new" onclick="newGame()">🔄 換題</button>
+            <button class="main-btn btn-custom" onclick="openCustomModal()">✍️ 自訂</button>
+            <button class="main-btn btn-solve" onclick="getOnlineSolution()">💡 解答</button>
+            <button class="main-btn btn-check" onclick="checkAnswer()">✅ 核對</button>
+        </div>
+    </div>
+</div>
+
+<div id="customModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('customModal')">&times;</span>
+        <h3>✍️ 自訂題目</h3>
+        <p style="color:#666;">請輸入 4 個數字：</p>
+        <input type="tel" id="customNumInput" class="custom-input" maxlength="4" placeholder="0000" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)">
+        <button class="main-btn" style="background:#6f42c1; width:100%; font-size:1.1rem;" onclick="submitCustomInput()">確定出題</button>
+    </div>
+</div>
+
+<div id="solutionModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('solutionModal')">&times;</span>
+        <h3>參考解答</h3>
+        <div id="solutionText" style="margin: 20px 0; font-size: 1.2rem; font-family: monospace; color: #0d6efd;"></div>
+        <div id="offlineMsg" style="color: #dc3545; font-size: 0.9rem; display:none;">⚠️ 請連接網路查看解答</div>
+        <button id="btnFixSolution" class="btn-fix-solution" onclick="startCorrection()">
+            🛠️ 解答有誤？協助修正
+        </button>
+    </div>
+</div>
+
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('uploadModal')">&times;</span>
+        <div id="uploadStep1">
+            <h3 id="uploadTitle">貢獻解答</h3>
+            <p id="uploadDesc" style="color:#666; font-size:0.9rem;">是否將解答上傳至雲端？</p>
+            <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin:15px 0; font-weight:bold; font-family:monospace;">
+                <span id="uploadFormulaPreview"></span>
+            </div>
+            <button class="main-btn" style="background:#667eea; width:100%;" onclick="processUpload()">確認上傳</button>
+        </div>
+        
+        <div id="uploadStep2" style="display:none;">
+            <br>
+            <div class="loader" style="width:40px; height:40px; border-width:4px;"></div>
+            <p>連線中...</p>
+        </div>
+
+        <div id="uploadStep3" style="display:none;">
+            <span class="upload-icon upload-success">🎉</span>
+            <h3 id="uploadSuccessTitle">成功！</h3>
+            <p id="uploadSuccessMsg" style="color:#666;"></p>
+            <button class="main-btn" style="background:#198754; width:100%; margin-top:15px;" onclick="closeModal('uploadModal')">太棒了</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentNumbers = [];
+    let cachedSolution = null;
+    let currentDifficulty = 0; 
+    let isCorrectionMode = false;
+    let userSavedSolution = null; // 用來存儲從 localStorage 讀到的答案
+
+    window.onload = newGame;
+
+    // --- 產生唯一 Key ---
+    // 將數字排序後組合成字串，這樣 7662 和 6276 會視為同一題
+    function getProblemKey(nums) {
+        return "mathGame_sol_" + [...nums].sort().join('');
+    }
+
+    // --- 儲存解答 ---
+    function saveSolutionLocally(nums, formula) {
+        const key = getProblemKey(nums);
+        localStorage.setItem(key, formula);
+        console.log("Saved to local storage:", key, formula);
+    }
+
+    // --- 讀取解答 ---
+    function loadSolutionLocally(nums) {
+        const key = getProblemKey(nums);
+        return localStorage.getItem(key);
+    }
+
+    function newGame() {
+        currentNumbers = [];
+        for (let i = 0; i < 4; i++) {
+            currentNumbers.push(Math.floor(Math.random() * 10));
+        }
+        setupGame();
+    }
+
+    function setupGame() {
+        cachedSolution = null;
+        currentDifficulty = 0;
+        isCorrectionMode = false;
+        
+        document.getElementById('plateNumbers').innerText = currentNumbers.join('');
+        document.getElementById('userFormula').value = '';
+        document.getElementById('result').innerText = '';
+        document.getElementById('btnUpload').style.display = 'none';
+        document.getElementById('btnUpload').className = 'btn-upload';
+        document.getElementById('btnUpload').innerText = '🚀 上傳神解';
+
+        calculateDifficultyLocal();
+    }
+
+    function openCustomModal() {
+        document.getElementById('customNumInput').value = '';
+        document.getElementById('customModal').style.display = 'flex';
+        document.getElementById('customNumInput').focus();
+    }
+
+    function submitCustomInput() {
+        const val = document.getElementById('customNumInput').value;
+        if (val.length !== 4 || isNaN(val)) {
+            alert('請輸入 4 個數字！');
+            return;
+        }
+        currentNumbers = val.split('').map(Number);
+        closeModal('customModal');
+        setupGame();
+    }
+
+    function insert(symbol) {
+        const input = document.getElementById('userFormula');
+        input.value += symbol;
+        input.scrollLeft = input.scrollWidth; 
+    }
+
+    function backspace() {
+        const input = document.getElementById('userFormula');
+        input.value = input.value.slice(0, -1);
+    }
+
+    function clearInput() {
+        document.getElementById('userFormula').value = '';
+        document.getElementById('result').innerText = '';
+        document.getElementById('btnUpload').style.display = 'none';
+        if(isCorrectionMode) {
+             document.getElementById('result').innerText = '請輸入正確算式並核對';
+             document.getElementById('result').className = 'info';
+        }
+    }
+
+    function startCorrection() {
+        closeModal('solutionModal');
+        isCorrectionMode = true;
+        document.getElementById('userFormula').value = '';
+        const resultEl = document.getElementById('result');
+        resultEl.innerText = "✍️ 請輸入正確算式，核對後即可修正";
+        resultEl.className = "info";
+        document.getElementById('btnUpload').style.display = 'none';
+    }
+
+    function openUploadModal() {
+        const formula = document.getElementById('userFormula').value;
+        document.getElementById('uploadFormulaPreview').innerText = formula;
+        const title = document.getElementById('uploadTitle');
+        const desc = document.getElementById('uploadDesc');
+        
+        if (isCorrectionMode) {
+            title.innerText = "修正資料庫";
+            desc.innerHTML = "您正在修正此題的解答。<br>確定上傳嗎？";
+        } else {
+            title.innerText = "貢獻解答";
+            desc.innerHTML = "解出來了！<br>是否上傳至雲端？";
+        }
+        
+        document.getElementById('uploadStep1').style.display = 'block';
+        document.getElementById('uploadStep2').style.display = 'none';
+        document.getElementById('uploadStep3').style.display = 'none';
+        document.getElementById('uploadModal').style.display = 'flex';
+    }
+
+    function processUpload() {
+        if (!navigator.onLine) {
+            alert("請連接網路以進行上傳！");
+            return;
+        }
+        document.getElementById('uploadStep1').style.display = 'none';
+        document.getElementById('uploadStep2').style.display = 'block';
+
+        // 真正的儲存動作 (存到 localStorage)
+        const currentFormula = document.getElementById('userFormula').value;
+        saveSolutionLocally(currentNumbers, currentFormula);
+
+        setTimeout(() => {
+            document.getElementById('uploadStep2').style.display = 'none';
+            document.getElementById('uploadStep3').style.display = 'block';
+            
+            const msg = document.getElementById('uploadSuccessMsg');
+            const successTitle = document.getElementById('uploadSuccessTitle');
+            
+            if (isCorrectionMode) {
+                successTitle.innerText = "資料庫已修復！";
+                msg.innerHTML = "感謝您的協助！<br>解答已儲存至本機。";
+                isCorrectionMode = false;
+                document.getElementById('btnUpload').className = 'btn-upload';
+                document.getElementById('btnUpload').innerText = '🚀 上傳神解';
+            } else {
+                successTitle.innerText = "上傳成功！";
+                if (currentDifficulty === 4 || !cachedSolution) {
+                    msg.innerHTML = "太神了！地獄級難題被你解開了！<br>解答已永久保存。";
+                } else {
+                    msg.innerHTML = "感謝貢獻！<br>解答已存入本機記憶體。";
+                }
+            }
+            // 更新狀態
+            calculateDifficultyLocal(); 
+        }, 1500);
+    }
+
+    function getOnlineSolution() {
+        const modal = document.getElementById('solutionModal');
+        const textDiv = document.getElementById('solutionText');
+        const offlineDiv = document.getElementById('offlineMsg');
+        const btnFix = document.getElementById('btnFixSolution');
+        
+        modal.style.display = "flex";
+        textDiv.innerHTML = '<div class="loader"></div>';
+        offlineDiv.style.display = "none";
+        btnFix.style.display = 'none';
+
+        if (!navigator.onLine) {
+            textDiv.innerHTML = '';
+            offlineDiv.style.display = "block";
+            return;
+        }
+
+        setTimeout(() => {
+            btnFix.style.display = 'inline-block';
+            
+            // 優先顯示使用者存檔的答案
+            if (userSavedSolution) {
+                textDiv.innerHTML = `<strong>✨ 玩家貢獻解答：</strong><br><br>${userSavedSolution}`;
+            } else if (cachedSolution) {
+                textDiv.innerText = cachedSolution;
+            } else {
+                textDiv.innerHTML = "這題目前為 <strong>👿 地獄級</strong><br>電腦還沒算出來。<br><br>請解開它並上傳！";
+            }
+        }, 600);
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target.className === 'modal') {
+            event.target.style.display = "none";
+        }
+    }
+
+    function calculateDifficultyLocal() {
+        const badge = document.getElementById('difficultyBadge');
+        badge.innerText = "分析中...";
+        badge.className = "difficulty-badge";
+        
+        // 先嘗試從 localStorage 讀取
+        userSavedSolution = loadSolutionLocally(currentNumbers);
+
+        setTimeout(() => {
+            let numObjs = currentNumbers.map(n => ({ val: n, label: String(n) }));
+            const result = findSolutionEngine(numObjs);
+            
+            // 如果有本地存檔，直接判定為已破解
+            if (userSavedSolution) {
+                cachedSolution = userSavedSolution; // 備用
+                currentDifficulty = 0; // 特殊狀態
+                badge.innerText = "🏆 已破解";
+                badge.className = "difficulty-badge diff-solved";
+                return;
+            }
+
+            if (result) {
+                cachedSolution = result.expr;
+                let diff = result.difficulty;
+                currentDifficulty = diff;
+                let text = "", cls = "";
+                if (diff === 1) { text = "⭐ 簡單"; cls = "diff-easy"; }
+                else if (diff === 2) { text = "⭐⭐ 中等"; cls = "diff-medium"; }
+                else if (diff === 3) { text = "⭐⭐⭐ 困難"; cls = "diff-hard"; }
+                else { text = "👿 地獄"; cls = "diff-hell"; }
+                badge.innerText = text;
+                badge.className = "difficulty-badge " + cls;
+            } else {
+                cachedSolution = null;
+                currentDifficulty = 4;
+                badge.innerText = "👿 地獄";
+                badge.className = "difficulty-badge diff-hell";
+            }
+        }, 50);
+    }
+
+    function findSolutionEngine(numObjs) {
+        const perms = getPermutations(numObjs);
+        for (let p of perms) {
+            let res = trySolve(p, ['+', '-']);
+            if (res) return { expr: res, difficulty: 1 };
+        }
+        for (let p of perms) {
+            let res = trySolve(p, ['+', '-', '*', '/']);
+            if (res) return { expr: res, difficulty: 2 };
+        }
+        let hardResult = trySolveHard(numObjs);
+        if (hardResult) return { expr: hardResult, difficulty: 3 };
+
+        return null;
+    }
+
+    function trySolve(objs, allowedOps) {
+        const [a, b, c, d] = objs;
+        for (let op1 of allowedOps) {
+            for (let op2 of allowedOps) {
+                for (let op3 of allowedOps) {
+                    try {
+                        if(isEqual(evalSafe(a.val, b.val, op1), evalSafe(c.val, d.val, op2))) 
+                            return `${a.label}${op1}${b.label}=${c.label}${op2}${d.label}`;
+                        if(isEqual(evalSafe(evalSafe(a.val, b.val, op1), c.val, op2), d.val)) 
+                            return `(${a.label}${op1}${b.label})${op2}${c.label}=${d.label}`;
+                        if(isEqual(a.val, evalSafe(d.val, evalSafe(b.val, c.val, op2), op3))) 
+                            return `${a.label}=${d.label}${op3}(${b.label}${op2}${c.label})`;
+                    } catch(e){}
+                }
+            }
+        }
+        return null;
+    }
+
+    function trySolveHard(originalObjs) {
+        let variants = [];
+        function generateVariants(index, currentArr) {
+            if (index === 4) { variants.push(currentArr); return; }
+            generateVariants(index + 1, [...currentArr, originalObjs[index]]);
+            if (originalObjs[index].val === 9) { generateVariants(index + 1, [...currentArr, { val: 3, label: '√9' }]); }
+            else if (originalObjs[index].val === 4) { generateVariants(index + 1, [...currentArr, { val: 2, label: '√4' }]); }
+        }
+        generateVariants(0, []);
+
+        for (let v of variants) {
+            let isOriginal = true;
+            for(let i=0; i<4; i++) if(v[i].label !== originalObjs[i].label) isOriginal = false;
+            if (isOriginal) continue;
+
+            let perms = getPermutations(v);
+            for (let p of perms) {
+                let res = trySolve(p, ['+', '-', '*', '/']);
+                if (res) return res;
+            }
+        }
+        return null;
+    }
+
+    function evalSafe(a, b, op) {
+        if (op === '/' && Math.abs(b) < 0.001) return 999999;
+        if (op === '+') return a+b; if (op === '-') return a-b;
+        if (op === '*') return a*b; if (op === '/') return a/b;
+        return 0;
+    }
+    function isEqual(a, b) { return Math.abs(a - b) < 0.00001; }
+    
+    function getPermutations(arr) {
+        if (arr.length <= 1) return [arr];
+        let output = [];
+        for (let i = 0; i < arr.length; i++) {
+            let current = arr[i];
+            let remaining = arr.slice(0, i).concat(arr.slice(i + 1));
+            let remainingPerms = getPermutations(remaining);
+            for (let j = 0; j < remainingPerms.length; j++) {
+                output.push([current].concat(remainingPerms[j]));
+            }
+        }
+        return output;
+    }
+
+    function factorial(n) {
+        if (n < 0) return NaN;
+        if (n === 0 || n === 1) return 1;
+        let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
+    }
+
+    function checkAnswer() {
+        const formula = document.getElementById('userFormula').value.trim();
+        const resultEl = document.getElementById('result');
+        const uploadBtn = document.getElementById('btnUpload');
+        
+        uploadBtn.style.display = 'none';
+
+        if (!formula.includes('=')) { resultEl.innerText = "❌ 需要等號 (=)"; resultEl.className="error"; return; }
+        const digitsInFormula = formula.match(/\d/g);
+        if (!digitsInFormula) { resultEl.innerText = "❌ 請輸入數字"; resultEl.className="error"; return; }
+
+        const sortedCurrent = [...currentNumbers].sort().join('');
+        const sortedInput = [...digitsInFormula].sort().join('');
+
+        if (sortedCurrent !== sortedInput) {
+            resultEl.innerHTML = `❌ 數字不符<br><small>題目:${sortedCurrent} 你打:${sortedInput}</small>`; 
+            resultEl.className="error"; return;
+        }
+
+        let parseStr = formula.replace(/\^/g, '**').replace(/√/g, 'Math.sqrt');
+        while (parseStr.includes('!')) {
+            let regex = /(\d+)!/g; 
+            if (regex.test(parseStr)) {
+                parseStr = parseStr.replace(regex, 'factorial($1)');
+            } else if (/\)!/.test(parseStr)) {
+                let lastExcl = parseStr.lastIndexOf('!');
+                let openParen = -1;
+                let balance = 0;
+                for (let i = lastExcl - 1; i >= 0; i--) {
+                    if (parseStr[i] === ')') balance++;
+                    if (parseStr[i] === '(') balance--;
+                    if (balance === 0) { openParen = i; break; }
+                }
+                if (openParen !== -1) {
+                    let content = parseStr.substring(openParen, lastExcl);
+                    parseStr = parseStr.substring(0, openParen) + `factorial(${content})` + parseStr.substring(lastExcl + 1);
+                } else { resultEl.innerText = "❌ 階乘格式錯"; resultEl.className="error"; return; }
+            } else { resultEl.innerText = "❌ 階乘符號錯"; resultEl.className="error"; return; }
+        }
+
+        const sides = parseStr.split('=');
+        if (sides.length !== 2) { resultEl.innerText = "❌ 只能有一個等號"; resultEl.className="error"; return; }
+
+        try {
+            const leftVal = eval(sides[0]);
+            const rightVal = eval(sides[1]);
+            if (Math.abs(leftVal - rightVal) < 0.000001) {
+                resultEl.innerText = "🎉 答案正確！";
+                resultEl.className = "success";
+                
+                if (isCorrectionMode) {
+                    uploadBtn.innerText = "🔧 上傳修正";
+                    uploadBtn.className = "btn-upload fix-mode";
+                } else {
+                    uploadBtn.innerText = "🚀 上傳神解";
+                    uploadBtn.className = "btn-upload";
+                }
+                uploadBtn.style.display = 'inline-block';
+                
+            } else {
+                resultEl.innerHTML = `❌ 等式不成立<br><small>${parseFloat(leftVal.toFixed(2))} ≠ ${parseFloat(rightVal.toFixed(2))}</small>`;
+                resultEl.className="error";
+            }
+        } catch (e) {
+            resultEl.innerText = "❌ 算式錯誤";
+            resultEl.className="error";
+        }
+    }
+</script>
+
+</body>
+</html>
