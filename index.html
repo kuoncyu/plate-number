@@ -474,6 +474,10 @@
     .key{ padding:12px 0; font-size:17px; }
     header .title{ font-size:23px; }
   }
+  @media (max-width:360px){
+    .keyrow{ gap:5px; }
+    .key{ padding:10px 0; font-size:15px; }
+  }
 
   /* ---------- start screen ---------- */
   #startScreen{
@@ -635,6 +639,7 @@
         <button class="key op" data-op="-">−</button>
         <button class="key op" data-op="×">×</button>
         <button class="key op" data-op="÷">÷</button>
+        <button class="key op" data-op="^">^</button>
       </div>
       <div class="keyrow">
         <button class="key op" data-op="(">(</button>
@@ -648,8 +653,8 @@
     </div>
 
     <div class="action-row">
-      <button class="btn ghost" id="btnUndo">上一步</button>
-      <button class="btn ghost" id="btnClear">清除</button>
+      <button class="btn ghost" id="btnUndo">←</button>
+      <button class="btn ghost" id="btnClear">C</button>
       <button class="btn primary" id="btnSubmit">送出答案</button>
     </div>
 
@@ -699,7 +704,7 @@
   </section>
 
   <footer>
-    每張車牌的四個數字都要恰好各用一次，分別放進等號左右兩邊；可自由排序、加括號、開根號與取階乘，只要兩邊數值真正相等就算過關。<br>
+    每張車牌的四個數字都要恰好各用一次，分別放進等號左右兩邊；可自由排序、加括號、開根號、次方與取階乘，只要兩邊數值真正相等就算過關。<br>
     階乘僅適用於 0～12 的非負整數；除以 0 或負數開根號視為無效算式。
     <div class="credit-line">作者：郭柏宏　版本：20260910</div>
   </footer>
@@ -763,11 +768,21 @@ function evalTokens(tokens){
     return v;
   }
 
-  function parseTerm(){
+  function parsePower(){
     let v = parseAtom();
+    if (peek() && peek().type === 'op' && peek().value === '^'){
+      pos++;
+      const rhs = parsePower(); // 右結合：2^3^2 = 2^(3^2)
+      v = Math.pow(v, rhs);
+    }
+    return v;
+  }
+
+  function parseTerm(){
+    let v = parsePower();
     while (peek() && peek().type === 'op' && (peek().value === '×' || peek().value === '÷')){
       const op = peek().value; pos++;
-      const rhs = parseAtom();
+      const rhs = parsePower();
       if (op === '×') v = v * rhs; else v = v / rhs;
     }
     return v;
@@ -1093,7 +1108,7 @@ function updateKeypad(){
   el.keypad.querySelectorAll('button[data-op]').forEach(btn=>{
     const op = btn.dataset.op;
     let enabled;
-    if (op === '+' || op === '-' || op === '×' || op === '÷') enabled = !exp;
+    if (op === '+' || op === '-' || op === '×' || op === '÷' || op === '^') enabled = !exp;
     else if (op === '(') enabled = exp;
     else if (op === ')') enabled = !exp && pb > 0;
     else if (op === 'sqrt') enabled = exp;
@@ -1173,7 +1188,7 @@ function addDigit(idx){
 function addOperator(code){
   const exp = expectingOperand();
   const pb = parenBalance();
-  if (code === '+' || code === '-' || code === '×' || code === '÷'){
+  if (code === '+' || code === '-' || code === '×' || code === '÷' || code === '^'){
     if (exp) return;
     state.tokens.push({ type:'op', value: code });
   } else if (code === '('){
