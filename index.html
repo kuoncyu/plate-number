@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>車牌計算挑戰｜等式成立</title>
+<title>車牌計算挑戰｜湊出 24</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -421,6 +421,10 @@
     padding:10px 12px;
     overflow-wrap:anywhere;
   }
+  .admin-answer-list{
+    margin-top:10px;
+  }
+  .admin-answer-list .ledger-list li{ color:var(--signal-yellow); }
 
   /* ---------- atlas ---------- */
   .atlas-stats{
@@ -744,6 +748,7 @@
       <span id="atlasSelectedLabel">目前選取：----</span>
     </div>
     <div class="atlas-controls">
+      <button class="btn ghost" id="btnExport">⬇️ 匯出已破解答案（TXT）</button>
       <div class="seg" id="atlasFilter">
         <button data-f="all" class="active">全部</button>
         <button data-f="solved">已破解</button>
@@ -1012,6 +1017,42 @@ function saveStorageToLS(){
 }
 let storage = loadStorage();
 
+const SUGGESTED_KEY = 'plate24_suggested_v1';
+function loadSuggested(){
+  try{
+    const raw = localStorage.getItem(SUGGESTED_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveSuggestedToLS(){
+  try{ localStorage.setItem(SUGGESTED_KEY, JSON.stringify(suggestedStore)); }
+  catch(e){ /* storage full or unavailable — fail silently */ }
+}
+let suggestedStore = loadSuggested();
+
+// 第一次瀏覽某個車牌時，用分級求解引擎算出星等與一組建議答案並存起來；
+// 之後同一張車牌不用重算，且玩家找到的新解法會持續加進這個清單。
+function ensureSuggestedEntry(key, digits){
+  if (suggestedStore[key]) return;
+  const rating = ratePuzzle(digits);
+  suggestedStore[key] = {
+    stars: rating.stars,
+    tierLabel: TIER_LABEL[rating.tier],
+    answers: rating.example ? [rating.example] : [],
+  };
+  saveSuggestedToLS();
+}
+
+// 玩家解出一個「建議答案清單裡還沒有」的正確解法時，直接補進建議答案
+function addSolutionToSuggested(key, exprStr){
+  const entry = suggestedStore[key];
+  if (!entry) return;
+  if (!entry.answers.includes(exprStr)){
+    entry.answers.push(exprStr);
+    saveSuggestedToLS();
+  }
+}
+
 /* ======================================================================
    3. 遊戲狀態
    ====================================================================== */
@@ -1092,6 +1133,7 @@ const el = {
   ledger: document.getElementById('ledger'),
   solvedCount: document.getElementById('solvedCount'),
   atlasSelectedLabel: document.getElementById('atlasSelectedLabel'),
+  btnExport: document.getElementById('btnExport'),
   atlasFilter: document.getElementById('atlasFilter'),
   atlasJump: document.getElementById('atlasJump'),
   btnAtlasJump: document.getElementById('btnAtlasJump'),
@@ -1253,7 +1295,7 @@ function escapeHtml(s){
 
 // 老師／管理員可自行修改這組密碼。注意：這只是給教室情境用的「不要偷看」
 // 提醒機制，密碼是寫在前端程式碼裡的明文，並非真正的安全防護。
-const ADMIN_PASSWORD = '07210609';
+const ADMIN_PASSWORD = 'admin123';
 
 function renderAdminBox(){
   if (!state.adminUnlocked){
@@ -1264,13 +1306,19 @@ function renderAdminBox(){
       </div>
       <p class="admin-note">避免學生還沒解完就偷看答案，僅老師／管理員輸入密碼後才能查看建議答案。</p>`;
   } else {
-    const sug = state.suggestedAnswer || { expr:null, tierLabel:'' };
+    const sug = state.suggestedAnswer || { tierLabel:'', answers:[] };
+    const answers = sug.answers || [];
+    const listHtml = answers.length
+      ? `<ul class="ledger-list">${answers.map((s,i)=>
+          `<li><span class="eq">${escapeHtml(s)}</span><span class="idx">第 ${i+1} 解</span></li>`
+        ).join('')}</ul>`
+      : `<div class="admin-answer">目前找不到已知解法</div>`;
     el.adminBox.innerHTML =
       `<div class="admin-unlocked-row">
         <span class="admin-tier">${escapeHtml(sug.tierLabel)}</span>
         <button class="btn ghost" id="btnAdminLock">🔓 重新鎖定</button>
       </div>
-      <div class="admin-answer">${sug.expr ? escapeHtml(sug.expr) : '目前找不到已知解法'}</div>`;
+      <div class="admin-answer-list">${listHtml}</div>`;
   }
 }
 
@@ -1309,9 +1357,10 @@ function setPuzzle(key){
   state.used = [false,false,false,false];
   state.tokens = [];
 
-  const rating = ratePuzzle(state.digits);
-  state.stars = rating.stars;
-  state.suggestedAnswer = { expr: rating.example, tierLabel: TIER_LABEL[rating.tier] };
+  ensureSuggestedEntry(key, state.digits);
+  const entry = suggestedStore[key];
+  state.stars = entry.stars;
+  state.suggestedAnswer = entry;
 
   el.feedback.textContent = '';
   el.feedback.className = 'feedback';
@@ -1429,11 +1478,13 @@ function submitAnswer(){
     if (isNew){
       storage[state.puzzleKey].push(exprStr);
       saveStorageToLS();
+      addSolutionToSuggested(state.puzzleKey, exprStr);
     }
     setFeedback(isNew ? '答對了！左右兩邊相等 🎉' : '答對了！不過這個解法你已經破解過囉，換個算式再試試？', 'ok');
     sfxCorrect();
     flashPlate();
     renderLedger();
+    renderAdminBox();
     updateAtlasStats();
     drawAtlas();
     updateAtlasDetail(state.puzzleKey);
@@ -1572,6 +1623,35 @@ el.atlasCanvas.addEventListener('mousemove', e=>{
   el.atlasTooltip.style.top = (e.clientY - wrapRect.top) + 'px';
 });
 el.atlasCanvas.addEventListener('mouseleave', ()=>{ el.atlasTooltip.style.display = 'none'; });
+
+function exportSolvedToTxt(){
+  const keys = Object.keys(storage).filter(k => storage[k] && storage[k].length > 0).sort();
+  const lines = [];
+  lines.push('車牌計算挑戰 - 已破解答案匯出');
+  lines.push('匯出時間：' + new Date().toLocaleString('zh-TW'));
+  lines.push('共 ' + keys.length + ' 組車牌已破解');
+  lines.push('');
+  if (keys.length === 0){
+    lines.push('（目前還沒有任何已破解的車牌）');
+  } else {
+    for (const k of keys){
+      lines.push(k + '：');
+      for (const eq of storage[k]) lines.push('  ' + eq);
+      lines.push('');
+    }
+  }
+  const text = lines.join('\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '車牌計算挑戰_已破解答案.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+}
+el.btnExport.addEventListener('click', exportSolvedToTxt);
 
 el.atlasFilter.addEventListener('click', e=>{
   const btn = e.target.closest('button[data-f]');
