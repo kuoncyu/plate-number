@@ -1,739 +1,1439 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>車牌數學神童 v6.0 (本地記憶版)</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0; padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-            overflow: hidden;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>車牌計算挑戰｜湊出 24</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt: #1E2024;
+    --asphalt-2: #26292E;
+    --asphalt-3: #33373E;
+    --asphalt-3-active: #40454E;
+    --line-dim: #4A4E56;
+    --plate-white: #F6F4EB;
+    --plate-white-dim: #E9E6D9;
+    --ink: #1B1B1F;
+    --road-blue: #2568B0;
+    --road-blue-dark: #163D6E;
+    --signal-yellow: #F2B705;
+    --brake-red: #E15C4F;
+    --go-text: #EFEDE4;
+    --dim-text: #9A9EA6;
+    --radius-plate: 14px;
+    --radius-btn: 8px;
+  }
 
-        .container {
-            background: white;
-            padding: 10px 15px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 450px;
-            width: 95%;
-            max-height: 98vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            height: auto; 
-        }
+  *{ box-sizing:border-box; }
 
-        .header-section { flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; }
-        h1 { display: none; }
+  html,body{
+    margin:0; padding:0;
+    background:var(--asphalt);
+    color:var(--go-text);
+    font-family:'Noto Sans TC', system-ui, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
 
-        .game-info { display: flex; justify-content: center; align-items: center; margin-bottom: 5px; }
+  body{
+    /* faint asphalt texture via repeating dashes, subtle */
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(255,255,255,0.02), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(255,255,255,0.02), transparent 40%);
+  }
 
-        .difficulty-badge {
-            background-color: #eee;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: #555;
-        }
+  .wrap{
+    max-width:720px;
+    margin:0 auto;
+    padding:28px 18px 80px;
+  }
 
-        .license-plate {
-            background-color: #fcfcfc;
-            border: 2px solid #333;
-            border-radius: 6px;
-            padding: 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-top: 2px;
-            cursor: pointer;
-        }
-        
-        .license-plate::before {
-            content: "Math Game";
-            display: block;
-            font-size: 8px;
-            color: #666;
-            letter-spacing: 1px;
-            margin-top: 2px;
-        }
+  /* ---------- header ---------- */
+  header{
+    margin-bottom:22px;
+  }
+  header .title{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:28px;
+    letter-spacing:0.5px;
+    color:var(--go-text);
+    margin:0 0 4px;
+  }
+  header .sub{
+    margin:0;
+    font-size:14px;
+    color:var(--dim-text);
+    line-height:1.6;
+  }
 
-        .numbers {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 2rem;
-            font-weight: bold;
-            color: #000;
-            letter-spacing: 10px;
-            line-height: 1.1;
-            padding-bottom: 5px;
-        }
+  /* ---------- lane divider ---------- */
+  .lane-divider{
+    height:1px;
+    margin:30px 0;
+    background-image:repeating-linear-gradient(90deg, var(--line-dim) 0 18px, transparent 18px 30px);
+    opacity:0.7;
+  }
 
-        .input-area { margin-top: 5px; }
+  h2.section-title{
+    font-family:'Oswald', sans-serif;
+    font-weight:500;
+    font-size:17px;
+    letter-spacing:0.3px;
+    color:var(--go-text);
+    margin:0 0 14px;
+  }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 6px;
-            font-size: 1.3rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-family: monospace;
-            text-align: center;
-            background-color: #fafafa;
-            color: #333;
-        }
-        input:focus { border-color: #007bff; outline: none; }
+  /* ---------- hero plate ---------- */
+  .hero{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
 
-        #result-container {
-            min-height: 35px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin: 3px 0;
-            gap: 3px;
-        }
+  .plate-shell{
+    position:relative;
+    width:100%;
+    max-width:460px;
+  }
 
-        #result { font-size: 0.9rem; font-weight: bold; line-height: 1.2; }
-        .success { color: #198754; }
-        .error { color: #dc3545; }
-        .info { color: #0d6efd; animation: blink 2s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .plate{
+    position:relative;
+    background:var(--plate-white);
+    border:3px solid var(--ink);
+    border-radius:var(--radius-plate);
+    padding:22px 20px 16px;
+    box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink);
+    transition: box-shadow 0.4s ease, transform 0.25s ease;
+  }
+  .plate.correct-flash{
+    animation: plateGlow 0.9s ease;
+  }
+  @keyframes plateGlow{
+    0%{ box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink); }
+    35%{ box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink), 0 0 0 6px rgba(242,183,5,0.55); }
+    100%{ box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink); }
+  }
 
-        .btn-upload {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.4);
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: none;
-            font-weight: bold;
-        }
-        .btn-upload.fix-mode {
-            background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
-            box-shadow: 0 2px 8px rgba(255, 94, 98, 0.4);
-        }
-        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
-        .btn-upload:active { transform: scale(0.95); }
+  .bolt{
+    position:absolute;
+    top:10px;
+    width:9px; height:9px;
+    border-radius:50%;
+    background:#B9B6A8;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.35);
+  }
+  .bolt.tl{ left:12px; }
+  .bolt.tr{ right:12px; }
 
-        .keypad-container {
-            flex: 0 0 auto;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            margin-top: 5px;
-        }
+  .plate-digits{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:54px;
+    color:var(--ink);
+    line-height:1;
+    user-select:none;
+    letter-spacing:2px;
+  }
+  .plate-digits .d{
+    min-width:0.62em;
+    text-align:center;
+  }
+  .plate-digits .d.used{
+    color:#C7C3B4;
+  }
 
-        .keypad {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            margin-bottom: 8px;
-        }
+  .plate-foot{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+    padding-top:8px;
+    border-top:1px solid #D8D4C4;
+  }
+  .plate-key{
+    font-size:11px;
+    color:#6B6858;
+    letter-spacing:1px;
+  }
+  .stars{
+    font-size:15px;
+    letter-spacing:1px;
+    color:#D8D4C4;
+  }
+  .stars .on{ color:var(--road-blue); }
 
-        .keypad button {
-            padding: 8px 0;
-            font-size: 1.2rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            touch-action: manipulation;
-            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
-            background-color: #f8f9fa;
-        }
-        .keypad button:active { transform: translateY(2px); box-shadow: none; }
+  .hero-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    width:100%;
+    max-width:460px;
+  }
 
-        .btn-num { color: #212529; font-size: 1.3rem !important; background-color: #fff !important; border: 1px solid #eee !important; }
-        .btn-op { background-color: #e2e6ea !important; color: #0d6efd; }
-        .btn-func { background-color: #e2e6ea !important; color: #6c757d; font-size: 0.9rem !important; }
-        .btn-del { background-color: #ffeef0 !important; color: #dc3545; }
-        .btn-zero { grid-column: span 2; }
-        .btn-eq { background-color: #0d6efd !important; color: white; grid-column: span 2; }
+  button{
+    font-family:'Noto Sans TC', sans-serif;
+    cursor:pointer;
+    border:none;
+    outline:none;
+  }
+  button:disabled{
+    cursor:not-allowed;
+    opacity:0.35;
+  }
+  button:focus-visible{
+    outline:2px solid var(--signal-yellow);
+    outline-offset:2px;
+  }
 
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1.5fr;
-            gap: 6px;
-            margin-bottom: 2px;
-            flex: 0 0 auto;
-        }
+  .btn{
+    background:var(--asphalt-3);
+    color:var(--go-text);
+    border-radius:var(--radius-btn);
+    padding:10px 16px;
+    font-size:14px;
+    transition:background 0.15s ease, transform 0.08s ease;
+  }
+  .btn:hover:not(:disabled){ background:var(--asphalt-3-active); }
+  .btn:active:not(:disabled){ transform:scale(0.97); }
+  .btn.primary{ background:var(--road-blue); }
+  .btn.primary:hover:not(:disabled){ background:#2E76C4; }
+  .btn.ghost{ background:transparent; border:1px solid var(--line-dim); }
 
-        .main-btn {
-            padding: 10px 2px;
-            font-size: 0.9rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            white-space: nowrap;
-        }
-        .btn-new { background-color: #6c757d; }
-        .btn-custom { background-color: #6f42c1; }
-        .btn-check { background-color: #198754; font-size: 1rem; }
-        .btn-solve { background-color: #ffc107; color: #333; }
+  .plate-input-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .plate-input-row input[type=text]{
+    width:120px;
+    font-family:'Oswald', sans-serif;
+    font-size:20px;
+    letter-spacing:3px;
+    text-align:center;
+    background:var(--asphalt-3);
+    border:1px solid var(--line-dim);
+    color:var(--go-text);
+    border-radius:var(--radius-btn);
+    padding:8px 6px;
+  }
+  .plate-input-row input[type=text]:focus{
+    outline:2px solid var(--road-blue);
+    outline-offset:1px;
+  }
 
-        .modal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; 
-            background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
-        }
-        .modal-content {
-            background-color: #fff; padding: 20px; border-radius: 15px; width: 85%; max-width: 320px;
-            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        .close-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #aaa; }
+  /* ---------- builder ---------- */
+  .expr-display{
+    min-height:56px;
+    background:var(--asphalt-2);
+    border:1px solid var(--line-dim);
+    border-radius:var(--radius-btn);
+    padding:12px 14px;
+    font-family:'Oswald', sans-serif;
+    font-size:24px;
+    letter-spacing:1px;
+    color:var(--go-text);
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:2px;
+    word-break:break-all;
+  }
+  .expr-display .placeholder{
+    color:var(--dim-text);
+    font-family:'Noto Sans TC', sans-serif;
+    font-size:14px;
+  }
+  .expr-display .tok-num{ color:var(--go-text); }
+  .expr-display .tok-op{ color:var(--signal-yellow); margin:0 2px; }
+  .expr-display .tok-fn{ color:#7EC1E8; }
+  .expr-display .tok-eq{ color:var(--signal-yellow); font-weight:700; margin:0 4px; }
 
-        .custom-input {
-            width: 100%; box-sizing: border-box; padding: 10px; font-size: 1.8rem; letter-spacing: 8px;
-            text-align: center; border: 2px solid #6f42c1; border-radius: 10px; margin: 15px 0;
-            font-family: 'Courier New', monospace; background: #f8f0ff;
-        }
+  .result-line{
+    display:flex;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:6px 10px;
+    margin-top:8px;
+    font-size:13px;
+    color:var(--dim-text);
+  }
+  .result-line .rl-label{
+    color:var(--dim-text);
+  }
+  .result-line .val{
+    font-family:'Oswald', sans-serif;
+    font-size:16px;
+    color:var(--go-text);
+  }
+  .result-line .val.hit{ color:var(--signal-yellow); }
 
-        .btn-fix-solution {
-            background: transparent; border: 1px solid #dc3545; color: #dc3545; padding: 6px 12px;
-            border-radius: 20px; font-size: 0.85rem; margin-top: 15px; cursor: pointer;
-            font-weight: bold; transition: all 0.2s;
-        }
-        .btn-fix-solution:hover { background: #dc3545; color: white; }
+  .keypad{
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .keyrow{
+    display:flex;
+    gap:8px;
+  }
+  .key{
+    flex:1;
+    background:var(--asphalt-3);
+    color:var(--go-text);
+    border-radius:var(--radius-btn);
+    padding:14px 0;
+    font-family:'Oswald', sans-serif;
+    font-size:20px;
+    text-align:center;
+    transition:background 0.12s ease, transform 0.08s ease;
+  }
+  .key:hover:not(:disabled){ background:var(--asphalt-3-active); }
+  .key:active:not(:disabled){ transform:scale(0.95); }
+  .key.digit{ background:var(--road-blue-dark); }
+  .key.digit:hover:not(:disabled){ background:var(--road-blue); }
+  .key.digit:disabled{ background:var(--asphalt-2); opacity:0.3; }
+  .key.op{ font-size:19px; }
+  .key.eq-key{
+    background:var(--signal-yellow);
+    color:var(--ink);
+    font-weight:600;
+  }
+  .key.eq-key:hover:not(:disabled){ background:#FFC724; }
+  .key.eq-key:disabled{ background:var(--asphalt-3); color:var(--dim-text); }
 
-        .loader {
-            border: 3px solid #f3f3f3; border-top: 3px solid #333; border-radius: 50%; width: 20px; height: 20px;
-            animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .action-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:4px;
+  }
+  .action-row .btn{ flex:1; min-width:80px; text-align:center; }
 
-        .upload-icon { font-size: 2.5rem; margin-bottom: 5px; display: block; }
-        .upload-success { color: #198754; animation: bounce 0.5s; }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+  .feedback{
+    margin-top:12px;
+    min-height:22px;
+    font-size:14px;
+    font-weight:500;
+  }
+  .feedback.ok{ color:var(--signal-yellow); }
+  .feedback.err{ color:var(--brake-red); }
 
-        /* 已破解難度 */
-        .diff-solved { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
-    </style>
+  /* ---------- solutions ledger ---------- */
+  .ledger{
+    background:var(--asphalt-2);
+    border:1px solid var(--line-dim);
+    border-radius:var(--radius-btn);
+    padding:14px 16px;
+  }
+  .ledger .empty{
+    color:var(--dim-text);
+    font-size:14px;
+  }
+  .ledger-list{
+    list-style:none;
+    margin:0; padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .ledger-list li{
+    font-family:'Oswald', sans-serif;
+    font-size:16px;
+    letter-spacing:0.5px;
+    color:var(--go-text);
+    background:var(--asphalt-3);
+    border-radius:6px;
+    padding:8px 10px;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .ledger-list li .eq{ overflow-wrap:anywhere; }
+  .ledger-list li .idx{
+    font-family:'Noto Sans TC', sans-serif;
+    font-size:11px;
+    color:var(--dim-text);
+    white-space:nowrap;
+    align-self:flex-start;
+    margin-top:3px;
+  }
+
+  /* ---------- atlas ---------- */
+  .atlas-stats{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    font-size:13px;
+    color:var(--dim-text);
+    margin-bottom:12px;
+  }
+  .atlas-stats .num{ color:var(--signal-yellow); font-family:'Oswald', sans-serif; }
+
+  .atlas-controls{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+    align-items:center;
+  }
+  .seg{
+    display:flex;
+    background:var(--asphalt-2);
+    border:1px solid var(--line-dim);
+    border-radius:var(--radius-btn);
+    overflow:hidden;
+  }
+  .seg button{
+    background:transparent;
+    color:var(--dim-text);
+    padding:8px 12px;
+    font-size:13px;
+  }
+  .seg button.active{
+    background:var(--road-blue);
+    color:var(--go-text);
+  }
+
+  .atlas-canvas-wrap{
+    position:relative;
+    width:100%;
+    max-width:684px;
+    margin:0 auto;
+  }
+  #atlasCanvas{
+    width:100%;
+    height:auto;
+    display:block;
+    border-radius:6px;
+    background:var(--asphalt);
+    cursor:pointer;
+    border:1px solid var(--line-dim);
+  }
+  .atlas-tooltip{
+    position:absolute;
+    pointer-events:none;
+    background:var(--ink);
+    color:var(--plate-white);
+    font-family:'Oswald', sans-serif;
+    font-size:12px;
+    padding:5px 8px;
+    border-radius:5px;
+    white-space:nowrap;
+    transform:translate(-50%, -130%);
+    display:none;
+    z-index:5;
+    max-width:220px;
+    overflow-wrap:anywhere;
+    white-space:normal;
+    line-height:1.4;
+  }
+  .atlas-legend{
+    display:flex;
+    gap:16px;
+    justify-content:center;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--dim-text);
+  }
+  .atlas-legend .sw{
+    display:inline-block;
+    width:10px; height:10px;
+    border-radius:2px;
+    margin-right:5px;
+    vertical-align:-1px;
+  }
+
+  .atlas-detail{
+    margin-top:14px;
+    font-size:13px;
+    color:var(--dim-text);
+    text-align:center;
+  }
+
+  footer{
+    margin-top:36px;
+    font-size:12px;
+    color:var(--dim-text);
+    line-height:1.8;
+    text-align:center;
+  }
+
+  @media (max-width:420px){
+    .plate-digits{ font-size:40px; letter-spacing:1px; gap:6px; }
+    .key{ padding:12px 0; font-size:17px; }
+    header .title{ font-size:23px; }
+  }
+
+  /* ---------- start screen ---------- */
+  #startScreen{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px 24px;
+    gap:22px;
+  }
+  #startScreen .logo-plate{
+    background:var(--plate-white);
+    border:3px solid var(--ink);
+    border-radius:var(--radius-plate);
+    padding:20px 30px 14px;
+    box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink);
+  }
+  #startScreen .logo-plate .big{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:44px;
+    color:var(--ink);
+    letter-spacing:2px;
+  }
+  #startScreen .logo-plate .tag{
+    font-size:11px;
+    letter-spacing:1px;
+    color:#6B6858;
+    margin-top:4px;
+  }
+  #startScreen h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0;
+    color:var(--go-text);
+  }
+  #startScreen p.desc{
+    max-width:360px;
+    font-size:14px;
+    line-height:1.8;
+    color:var(--dim-text);
+    margin:0;
+  }
+  .btn-start{
+    background:var(--signal-yellow);
+    color:var(--ink);
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:19px;
+    letter-spacing:1px;
+    padding:16px 40px;
+    border-radius:999px;
+    box-shadow:0 4px 0 #B8890A;
+    transition:transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .btn-start:hover{ background:#FFC724; }
+  .btn-start:active{ transform:translateY(3px); box-shadow:0 1px 0 #B8890A; }
+  #startScreen .hint-audio{
+    font-size:12px;
+    color:var(--dim-text);
+  }
+  #startScreen .credit{
+    font-size:12px;
+    color:var(--dim-text);
+    margin-top:6px;
+  }
+
+  /* ---------- header sound toggle ---------- */
+  .header-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  #btnMute{
+    background:var(--asphalt-3);
+    color:var(--go-text);
+    border-radius:999px;
+    width:38px; height:38px;
+    font-size:16px;
+    flex-shrink:0;
+  }
+  #btnMute:hover{ background:var(--asphalt-3-active); }
+
+  .credit-line{
+    font-size:12px;
+    color:var(--dim-text);
+    margin-top:8px;
+  }
+</style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header-section">
-        <div class="game-info">
-            <span id="difficultyBadge" class="difficulty-badge">分析中...</span>
-        </div>
-        
-        <div class="license-plate" onclick="openCustomModal()">
-            <div class="numbers" id="plateNumbers">----</div>
-        </div>
-
-        <div class="input-area">
-            <input type="text" id="userFormula" placeholder="輸入算式..." autocomplete="off" readonly>
-        </div>
-
-        <div id="result-container">
-            <div id="result"></div>
-            <button id="btnUpload" class="btn-upload" onclick="openUploadModal()">🚀 上傳神解</button>
-        </div>
-    </div>
-
-    <div class="keypad-container">
-        <div class="keypad">
-            <button class="btn-func" onclick="insert('(')">(</button>
-            <button class="btn-func" onclick="insert(')')">)</button>
-            <button class="btn-func" onclick="insert('^')">^</button>
-            <button class="btn-func" onclick="insert('!')">!</button>
-            
-            <button class="btn-func" onclick="insert('√(')">√</button>
-            <button class="btn-del" onclick="clearInput()">C</button>
-            <button class="btn-del" onclick="backspace()">⌫</button>
-            <button class="btn-op" onclick="insert('/')">÷</button>
-            
-            <button class="btn-num" onclick="insert('7')">7</button>
-            <button class="btn-num" onclick="insert('8')">8</button>
-            <button class="btn-num" onclick="insert('9')">9</button>
-            <button class="btn-op" onclick="insert('*')">×</button>
-            
-            <button class="btn-num" onclick="insert('4')">4</button>
-            <button class="btn-num" onclick="insert('5')">5</button>
-            <button class="btn-num" onclick="insert('6')">6</button>
-            <button class="btn-op" onclick="insert('-')">-</button>
-            
-            <button class="btn-num" onclick="insert('1')">1</button>
-            <button class="btn-num" onclick="insert('2')">2</button>
-            <button class="btn-num" onclick="insert('3')">3</button>
-            <button class="btn-op" onclick="insert('+')">+</button>
-            
-            <button class="btn-num btn-zero" onclick="insert('0')">0</button>
-            <button class="btn-eq" onclick="insert('=')">=</button>
-        </div>
-
-        <div class="action-buttons">
-            <button class="main-btn btn-new" onclick="newGame()">🔄 換題</button>
-            <button class="main-btn btn-custom" onclick="openCustomModal()">✍️ 自訂</button>
-            <button class="main-btn btn-solve" onclick="getOnlineSolution()">💡 解答</button>
-            <button class="main-btn btn-check" onclick="checkAnswer()">✅ 核對</button>
-        </div>
-    </div>
+<div id="startScreen">
+  <div class="logo-plate">
+    <div class="big">2468</div>
+    <div class="tag">TAIWAN · EQUATION</div>
+  </div>
+  <h1>車牌計算挑戰</h1>
+  <p class="desc">隨機抽出一張車牌，用四個數字加減乘除、開根號、階乘，把式子拆成兩邊，讓等號左右真正相等。破解過的號碼會留在圖鑑裡，隨時可以回去找出更多解法。</p>
+  <button class="btn-start" id="btnStart">🔑 發動引擎，開始挑戰</button>
+  <p class="hint-audio">點擊開始即會播放遊戲音樂與音效</p>
+  <p class="credit">作者：郭柏宏　版本：20260910</p>
 </div>
 
-<div id="customModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('customModal')">&times;</span>
-        <h3>✍️ 自訂題目</h3>
-        <p style="color:#666;">請輸入 4 個數字：</p>
-        <input type="tel" id="customNumInput" class="custom-input" maxlength="4" placeholder="0000" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4)">
-        <button class="main-btn" style="background:#6f42c1; width:100%; font-size:1.1rem;" onclick="submitCustomInput()">確定出題</button>
+<div class="wrap" id="gameScreen" style="display:none;">
+
+  <header>
+    <div class="header-top">
+      <div>
+        <p class="title">車牌計算挑戰</p>
+        <p class="sub">隨機抽出一張車牌，用四個數字加減乘除、開根號、階乘，把式子拆成兩邊，讓等號左右真正相等。破解過的號碼會留在圖鑑裡，隨時可以回去找出更多解法。</p>
+      </div>
+      <button id="btnMute" title="靜音切換">🔊</button>
     </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="plate-shell">
+      <div class="plate" id="plate">
+        <span class="bolt tl"></span><span class="bolt tr"></span>
+        <div class="plate-digits" id="plateDigits"></div>
+        <div class="plate-foot">
+          <span class="plate-key">TAIWAN · EQUATION</span>
+          <span class="stars" id="starDisplay"></span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn primary" id="btnRandom">🎲 隨機出題</button>
+      <div class="plate-input-row">
+        <input type="text" id="customInput" maxlength="4" inputmode="numeric" placeholder="0000">
+        <button class="btn" id="btnCustom">挑戰指定號碼</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="lane-divider"></div>
+
+  <!-- BUILDER -->
+  <section>
+    <h2 class="section-title">列式作答</h2>
+    <div class="expr-display" id="exprDisplay">
+      <span class="placeholder">點選下方數字與符號，開始列式…</span>
+    </div>
+    <div class="result-line" id="resultLine">
+      <span class="rl-label">目前結果</span>
+      <span class="val">—</span>
+    </div>
+
+    <div class="keypad">
+      <div class="keyrow" id="digitRow"></div>
+      <div class="keyrow">
+        <button class="key op" data-op="+">+</button>
+        <button class="key op" data-op="-">−</button>
+        <button class="key op" data-op="×">×</button>
+        <button class="key op" data-op="÷">÷</button>
+      </div>
+      <div class="keyrow">
+        <button class="key op" data-op="(">(</button>
+        <button class="key op" data-op=")">)</button>
+        <button class="key op" data-op="sqrt">√</button>
+        <button class="key op" data-op="fact">!</button>
+      </div>
+      <div class="keyrow">
+        <button class="key op eq-key" data-op="eq">=</button>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn ghost" id="btnUndo">上一步</button>
+      <button class="btn ghost" id="btnClear">清除</button>
+      <button class="btn primary" id="btnSubmit">送出答案</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+  </section>
+
+  <div class="lane-divider"></div>
+
+  <!-- LEDGER -->
+  <section>
+    <h2 class="section-title">這個號碼的答案</h2>
+    <div class="ledger" id="ledger">
+      <div class="empty">這張車牌還沒被破解，你會是第一個嗎？</div>
+    </div>
+  </section>
+
+  <div class="lane-divider"></div>
+
+  <!-- ATLAS -->
+  <section>
+    <h2 class="section-title">車牌圖鑑 0000–9999</h2>
+    <div class="atlas-stats">
+      <span>已破解 <span class="num" id="solvedCount">0</span> / 10000</span>
+      <span id="atlasSelectedLabel">目前選取：----</span>
+    </div>
+    <div class="atlas-controls">
+      <div class="seg" id="atlasFilter">
+        <button data-f="all" class="active">全部</button>
+        <button data-f="solved">已破解</button>
+        <button data-f="unsolved">未破解</button>
+      </div>
+      <div class="plate-input-row">
+        <input type="text" id="atlasJump" maxlength="4" inputmode="numeric" placeholder="跳至">
+        <button class="btn" id="btnAtlasJump">前往</button>
+      </div>
+    </div>
+    <div class="atlas-canvas-wrap">
+      <canvas id="atlasCanvas" width="600" height="600"></canvas>
+      <div class="atlas-tooltip" id="atlasTooltip"></div>
+    </div>
+    <div class="atlas-legend">
+      <span><span class="sw" style="background:var(--asphalt-3)"></span>未破解</span>
+      <span><span class="sw" style="background:var(--signal-yellow)"></span>已破解</span>
+      <span><span class="sw" style="background:var(--road-blue)"></span>目前選取</span>
+    </div>
+    <div class="atlas-detail" id="atlasDetail"></div>
+  </section>
+
+  <footer>
+    每張車牌的四個數字都要恰好各用一次，分別放進等號左右兩邊；可自由排序、加括號、開根號與取階乘，只要兩邊數值真正相等就算過關。<br>
+    階乘僅適用於 0～12 的非負整數；除以 0 或負數開根號視為無效算式。
+    <div class="credit-line">作者：郭柏宏　版本：20260910</div>
+  </footer>
+
 </div>
 
-<div id="solutionModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('solutionModal')">&times;</span>
-        <h3>參考解答</h3>
-        <div id="solutionText" style="margin: 20px 0; font-size: 1.2rem; font-family: monospace; color: #0d6efd;"></div>
-        <div id="offlineMsg" style="color: #dc3545; font-size: 0.9rem; display:none;">⚠️ 請連接網路查看解答</div>
-        <button id="btnFixSolution" class="btn-fix-solution" onclick="startCorrection()">
-            🛠️ 解答有誤？協助修正
-        </button>
-    </div>
-</div>
-
-<div id="uploadModal" class="modal">
-    <div class="modal-content">
-        <span class="close-modal" onclick="closeModal('uploadModal')">&times;</span>
-        <div id="uploadStep1">
-            <h3 id="uploadTitle">貢獻解答</h3>
-            <p id="uploadDesc" style="color:#666; font-size:0.9rem;">是否將解答上傳至雲端？</p>
-            <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin:15px 0; font-weight:bold; font-family:monospace;">
-                <span id="uploadFormulaPreview"></span>
-            </div>
-            <button class="main-btn" style="background:#667eea; width:100%;" onclick="processUpload()">確認上傳</button>
-        </div>
-        
-        <div id="uploadStep2" style="display:none;">
-            <br>
-            <div class="loader" style="width:40px; height:40px; border-width:4px;"></div>
-            <p>連線中...</p>
-        </div>
-
-        <div id="uploadStep3" style="display:none;">
-            <span class="upload-icon upload-success">🎉</span>
-            <h3 id="uploadSuccessTitle">成功！</h3>
-            <p id="uploadSuccessMsg" style="color:#666;"></p>
-            <button class="main-btn" style="background:#198754; width:100%; margin-top:15px;" onclick="closeModal('uploadModal')">太棒了</button>
-        </div>
-    </div>
-</div>
+<audio id="bgm" loop preload="auto">
+  <source src="game.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-    let currentNumbers = [];
-    let cachedSolution = null;
-    let currentDifficulty = 0; 
-    let isCorrectionMode = false;
-    let userSavedSolution = null; // 用來存儲從 localStorage 讀到的答案
+'use strict';
 
-    window.onload = newGame;
+/* ======================================================================
+   1. 數學核心：階乘 / 算式求值 / 解題引擎
+   ====================================================================== */
 
-    // --- 產生唯一 Key ---
-    // 將數字排序後組合成字串，這樣 7662 和 6276 會視為同一題
-    function getProblemKey(nums) {
-        return "mathGame_sol_" + [...nums].sort().join('');
+function factorial(n){
+  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return NaN;
+  if (n > 170) return Infinity;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+// token: {type:'num',value:n} | {type:'op',value:'+'|'-'|'×'|'÷'} | {type:'lparen'} | {type:'rparen'} | {type:'sqrt'} | {type:'fact'}
+function evalTokens(tokens){
+  let pos = 0;
+  function peek(){ return tokens[pos]; }
+
+  function parsePrimary(){
+    const t = peek();
+    if (!t) throw new Error('unexpected end');
+    if (t.type === 'num'){ pos++; return t.value; }
+    if (t.type === 'lparen'){
+      pos++;
+      const v = parseExpr();
+      if (!peek() || peek().type !== 'rparen') throw new Error('missing )');
+      pos++;
+      return v;
     }
+    throw new Error('unexpected token ' + t.type);
+  }
 
-    // --- 儲存解答 ---
-    function saveSolutionLocally(nums, formula) {
-        const key = getProblemKey(nums);
-        localStorage.setItem(key, formula);
-        console.log("Saved to local storage:", key, formula);
+  function parseSqrt(){
+    if (peek() && peek().type === 'sqrt'){
+      pos++;
+      const v = parseSqrt();
+      if (v < 0) return NaN;
+      return Math.sqrt(v);
     }
+    return parsePrimary();
+  }
 
-    // --- 讀取解答 ---
-    function loadSolutionLocally(nums) {
-        const key = getProblemKey(nums);
-        return localStorage.getItem(key);
+  function parseAtom(){
+    let v = parseSqrt();
+    while (peek() && peek().type === 'fact'){
+      pos++;
+      v = factorial(v);
     }
+    return v;
+  }
 
-    function newGame() {
-        currentNumbers = [];
-        for (let i = 0; i < 4; i++) {
-            currentNumbers.push(Math.floor(Math.random() * 10));
+  function parseTerm(){
+    let v = parseAtom();
+    while (peek() && peek().type === 'op' && (peek().value === '×' || peek().value === '÷')){
+      const op = peek().value; pos++;
+      const rhs = parseAtom();
+      if (op === '×') v = v * rhs; else v = v / rhs;
+    }
+    return v;
+  }
+
+  function parseExpr(){
+    let v = parseTerm();
+    while (peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
+      const op = peek().value; pos++;
+      const rhs = parseTerm();
+      if (op === '+') v = v + rhs; else v = v - rhs;
+    }
+    return v;
+  }
+
+  const result = parseExpr();
+  if (pos !== tokens.length) throw new Error('trailing tokens');
+  return result;
+}
+
+function wrapC(cand){ return cand.atomic ? cand.e : '(' + cand.e + ')'; }
+
+function dedupCap(cands, cap){
+  const seen = new Set();
+  const out = [];
+  cands.sort((a,b)=> a.e.length - b.e.length);
+  for (const c of cands){
+    if (!Number.isFinite(c.v)) continue;
+    if (seen.has(c.e)) continue;
+    seen.add(c.e);
+    out.push(c);
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
+function subsetsOf(mask){
+  const subs = [];
+  for (let A = (mask - 1) & mask; A > 0; A = (A - 1) & mask) subs.push(A);
+  return subs;
+}
+
+// 建立每個數字子集合（非空真子集）用 +-×÷ 可湊出的所有數值／算式，用於難度評分
+function buildCandidates(digits, capPerSubset){
+  const memo = new Map();
+  function solveMask(mask){
+    if (memo.has(mask)) return memo.get(mask);
+    let cands;
+    if ((mask & (mask - 1)) === 0){
+      const idx = Math.log2(mask);
+      cands = [{ v: digits[idx], e: String(digits[idx]), atomic: true }];
+    } else {
+      let raw = [];
+      for (const A of subsetsOf(mask)){
+        const B = mask ^ A;
+        if (A > B) continue;
+        const ca = solveMask(A), cb = solveMask(B);
+        for (const x of ca) for (const y of cb){
+          raw.push({ v: x.v + y.v, e: wrapC(x) + '+' + wrapC(y), atomic: false });
+          raw.push({ v: x.v - y.v, e: wrapC(x) + '-' + wrapC(y), atomic: false });
+          raw.push({ v: y.v - x.v, e: wrapC(y) + '-' + wrapC(x), atomic: false });
+          raw.push({ v: x.v * y.v, e: wrapC(x) + '×' + wrapC(y), atomic: false });
+          raw.push({ v: x.v / y.v, e: wrapC(x) + '÷' + wrapC(y), atomic: false });
+          raw.push({ v: y.v / x.v, e: wrapC(y) + '÷' + wrapC(x), atomic: false });
         }
-        setupGame();
+      }
+      cands = dedupCap(raw, capPerSubset);
     }
+    memo.set(mask, cands);
+    return cands;
+  }
+  for (let m = 1; m <= 14; m++) solveMask(m);
+  return memo;
+}
 
-    function setupGame() {
-        cachedSolution = null;
-        currentDifficulty = 0;
-        isCorrectionMode = false;
-        
-        document.getElementById('plateNumbers').innerText = currentNumbers.join('');
-        document.getElementById('userFormula').value = '';
-        document.getElementById('result').innerText = '';
-        document.getElementById('btnUpload').style.display = 'none';
-        document.getElementById('btnUpload').className = 'btn-upload';
-        document.getElementById('btnUpload').innerText = '🚀 上傳神解';
-
-        calculateDifficultyLocal();
-    }
-
-    function openCustomModal() {
-        document.getElementById('customNumInput').value = '';
-        document.getElementById('customModal').style.display = 'flex';
-        document.getElementById('customNumInput').focus();
-    }
-
-    function submitCustomInput() {
-        const val = document.getElementById('customNumInput').value;
-        if (val.length !== 4 || isNaN(val)) {
-            alert('請輸入 4 個數字！');
-            return;
+// 找出所有「把四個數字拆成左右兩邊、兩邊數值相等」的等式數量，用於難度星級評分
+function solveEquations(digits, capPerSubset){
+  const memo = buildCandidates(digits, capPerSubset || 250);
+  const eps = 1e-6;
+  const results = new Set();
+  for (let A = 1; A <= 14; A++){
+    const B = 15 ^ A;
+    if (A >= B) continue; // 每組不重複子集合只處理一次
+    const candA = memo.get(A), candB = memo.get(B);
+    for (const x of candA){
+      for (const y of candB){
+        if (Number.isFinite(x.v) && Number.isFinite(y.v) && Math.abs(x.v - y.v) < eps){
+          results.add(x.e + '=' + y.e);
+          results.add(y.e + '=' + x.e);
         }
-        currentNumbers = val.split('').map(Number);
-        closeModal('customModal');
-        setupGame();
+      }
     }
+  }
+  return Array.from(results);
+}
 
-    function insert(symbol) {
-        const input = document.getElementById('userFormula');
-        input.value += symbol;
-        input.scrollLeft = input.scrollWidth; 
+function starRating(count){
+  if (count === 0) return 5;
+  if (count < 15) return 4;
+  if (count < 30) return 3;
+  if (count < 55) return 2;
+  return 1;
+}
+
+/* ======================================================================
+   2. 儲存（localStorage）
+   ====================================================================== */
+
+const STORAGE_KEY = 'plate24_solved_v1';
+function loadStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveStorageToLS(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(storage)); }
+  catch(e){ /* storage full or unavailable — fail silently */ }
+}
+let storage = loadStorage();
+
+/* ======================================================================
+   3. 遊戲狀態
+   ====================================================================== */
+
+const state = {
+  puzzleKey: '0000',
+  digits: [0,0,0,0],
+  used: [false,false,false,false],
+  tokens: [],
+  stars: 1,
+  basicSolutions: [],
+  selectedIdx: 0,
+  muted: false,
+};
+
+function hasEq(){ return state.tokens.some(t => t.type === 'eq'); }
+function lastTokenType(){
+  return state.tokens.length ? state.tokens[state.tokens.length - 1].type : null;
+}
+function expectingOperand(){
+  const lt = lastTokenType();
+  return lt === null || lt === 'op' || lt === 'lparen' || lt === 'sqrt' || lt === 'eq';
+}
+function parenBalance(){
+  let b = 0;
+  for (const t of state.tokens){ if (t.type === 'lparen') b++; else if (t.type === 'rparen') b--; }
+  return b;
+}
+function isComplete(){
+  return hasEq() && state.used.every(Boolean) && parenBalance() === 0 && !expectingOperand() && state.tokens.length > 0;
+}
+function tokensToString(tokens){
+  return tokens.map(t=>{
+    switch(t.type){
+      case 'num': return String(t.value);
+      case 'op': return t.value;
+      case 'lparen': return '(';
+      case 'rparen': return ')';
+      case 'sqrt': return '√';
+      case 'fact': return '!';
+      case 'eq': return '=';
     }
+    return '';
+  }).join('');
+}
+function formatNum(v){
+  if (!Number.isFinite(v)) return v === Infinity || v === -Infinity ? '∞' : '—';
+  if (Object.is(v, -0)) v = 0;
+  if (Number.isInteger(v)) return String(v);
+  return v.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+}
 
-    function backspace() {
-        const input = document.getElementById('userFormula');
-        input.value = input.value.slice(0, -1);
+/* ======================================================================
+   4. DOM 參照
+   ====================================================================== */
+
+const el = {
+  startScreen: document.getElementById('startScreen'),
+  gameScreen: document.getElementById('gameScreen'),
+  btnStart: document.getElementById('btnStart'),
+  btnMute: document.getElementById('btnMute'),
+  bgm: document.getElementById('bgm'),
+  plate: document.getElementById('plate'),
+  plateDigits: document.getElementById('plateDigits'),
+  starDisplay: document.getElementById('starDisplay'),
+  customInput: document.getElementById('customInput'),
+  btnCustom: document.getElementById('btnCustom'),
+  btnRandom: document.getElementById('btnRandom'),
+  exprDisplay: document.getElementById('exprDisplay'),
+  resultLine: document.getElementById('resultLine'),
+  digitRow: document.getElementById('digitRow'),
+  keypad: document.querySelector('.keypad'),
+  btnUndo: document.getElementById('btnUndo'),
+  btnClear: document.getElementById('btnClear'),
+  btnSubmit: document.getElementById('btnSubmit'),
+  feedback: document.getElementById('feedback'),
+  ledger: document.getElementById('ledger'),
+  solvedCount: document.getElementById('solvedCount'),
+  atlasSelectedLabel: document.getElementById('atlasSelectedLabel'),
+  atlasFilter: document.getElementById('atlasFilter'),
+  atlasJump: document.getElementById('atlasJump'),
+  btnAtlasJump: document.getElementById('btnAtlasJump'),
+  atlasCanvas: document.getElementById('atlasCanvas'),
+  atlasTooltip: document.getElementById('atlasTooltip'),
+  atlasDetail: document.getElementById('atlasDetail'),
+};
+
+/* ======================================================================
+   4b. 音效與背景音樂
+   ====================================================================== */
+
+let audioCtx = null;
+function ensureAudioCtx(){
+  if (!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  return audioCtx;
+}
+
+function playTone(freq, duration, type, vol, delay){
+  if (state.muted) return;
+  const ctx = ensureAudioCtx();
+  if (!ctx) return;
+  const t0 = ctx.currentTime + (delay || 0);
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(vol == null ? 0.12 : vol, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + duration + 0.02);
+}
+
+function sfxClick(){ playTone(620, 0.05, 'square', 0.06); }
+function sfxParen(){ playTone(480, 0.05, 'square', 0.06); }
+function sfxUndo(){ playTone(340, 0.07, 'triangle', 0.08); }
+function sfxCorrect(){
+  playTone(523.25, 0.12, 'triangle', 0.14, 0);
+  playTone(659.25, 0.12, 'triangle', 0.14, 0.09);
+  playTone(784.0, 0.18, 'triangle', 0.15, 0.18);
+}
+function sfxWrong(){ playTone(160, 0.28, 'sawtooth', 0.10); }
+function sfxSelect(){ playTone(440, 0.08, 'sine', 0.08); }
+
+function setMuted(m){
+  state.muted = m;
+  el.btnMute.textContent = m ? '🔇' : '🔊';
+  if (m){ el.bgm.pause(); }
+  else { el.bgm.play().catch(()=>{}); }
+}
+el.btnMute.addEventListener('click', ()=> setMuted(!state.muted));
+
+
+/* ======================================================================
+   5. 渲染
+   ====================================================================== */
+
+function renderHero(){
+  el.plateDigits.innerHTML = state.digits.map((d,i)=>`<span class="d" data-idx="${i}">${d}</span>`).join('');
+  el.starDisplay.innerHTML = Array.from({length:5},(_,i)=>`<span class="${i<state.stars?'on':''}">★</span>`).join('');
+}
+
+function renderExpr(){
+  if (state.tokens.length === 0){
+    el.exprDisplay.innerHTML = '<span class="placeholder">點選下方數字與符號，開始列式…</span>';
+  } else {
+    el.exprDisplay.innerHTML = state.tokens.map(t=>{
+      if (t.type === 'num') return `<span class="tok-num">${t.value}</span>`;
+      if (t.type === 'op') return `<span class="tok-op">${t.value}</span>`;
+      if (t.type === 'lparen') return `<span class="tok-num">(</span>`;
+      if (t.type === 'rparen') return `<span class="tok-num">)</span>`;
+      if (t.type === 'sqrt') return `<span class="tok-fn">√</span>`;
+      if (t.type === 'fact') return `<span class="tok-fn">!</span>`;
+      if (t.type === 'eq') return `<span class="tok-eq">=</span>`;
+      return '';
+    }).join('');
+  }
+
+  const eqIdx = state.tokens.findIndex(t => t.type === 'eq');
+
+  if (eqIdx === -1){
+    let v = NaN, ok = false;
+    if (parenBalance() === 0 && !expectingOperand() && state.tokens.length > 0){
+      try { v = evalTokens(state.tokens); ok = true; } catch(e){ ok = false; }
     }
+    el.resultLine.innerHTML = `<span class="rl-label">目前算式</span><span class="val">${ok ? formatNum(v) : '—'}</span>`;
+  } else {
+    const leftTokens = state.tokens.slice(0, eqIdx);
+    const rightTokens = state.tokens.slice(eqIdx + 1);
+    let leftVal = NaN, leftOk = false;
+    try { leftVal = evalTokens(leftTokens); leftOk = true; } catch(e){ leftOk = false; }
 
-    function clearInput() {
-        document.getElementById('userFormula').value = '';
-        document.getElementById('result').innerText = '';
-        document.getElementById('btnUpload').style.display = 'none';
-        if(isCorrectionMode) {
-             document.getElementById('result').innerText = '請輸入正確算式並核對';
-             document.getElementById('result').className = 'info';
-        }
+    let rightVal = NaN, rightOk = false;
+    if (parenBalance() === 0 && !expectingOperand() && rightTokens.length > 0){
+      try { rightVal = evalTokens(rightTokens); rightOk = true; } catch(e){ rightOk = false; }
     }
+    const matched = leftOk && rightOk && Number.isFinite(leftVal) && Number.isFinite(rightVal) && Math.abs(leftVal - rightVal) < 1e-6;
+    el.resultLine.innerHTML =
+      `<span class="rl-label">左邊</span><span class="val">${leftOk ? formatNum(leftVal) : '—'}</span>` +
+      `<span class="rl-label">右邊</span><span class="val ${matched ? 'hit' : ''}">${rightOk ? formatNum(rightVal) : '…'}</span>`;
+  }
+}
 
-    function startCorrection() {
-        closeModal('solutionModal');
-        isCorrectionMode = true;
-        document.getElementById('userFormula').value = '';
-        const resultEl = document.getElementById('result');
-        resultEl.innerText = "✍️ 請輸入正確算式，核對後即可修正";
-        resultEl.className = "info";
-        document.getElementById('btnUpload').style.display = 'none';
+function updateKeypad(){
+  const exp = expectingOperand();
+  const pb = parenBalance();
+
+  el.digitRow.querySelectorAll('button[data-idx]').forEach(btn=>{
+    const idx = parseInt(btn.dataset.idx, 10);
+    btn.disabled = state.used[idx] || !exp;
+  });
+  el.plateDigits.querySelectorAll('.d').forEach(span=>{
+    const idx = parseInt(span.dataset.idx, 10);
+    span.classList.toggle('used', !!state.used[idx]);
+  });
+
+  el.keypad.querySelectorAll('button[data-op]').forEach(btn=>{
+    const op = btn.dataset.op;
+    let enabled;
+    if (op === '+' || op === '-' || op === '×' || op === '÷') enabled = !exp;
+    else if (op === '(') enabled = exp;
+    else if (op === ')') enabled = !exp && pb > 0;
+    else if (op === 'sqrt') enabled = exp;
+    else if (op === 'fact') enabled = !exp;
+    else if (op === 'eq') enabled = !hasEq() && !exp && pb === 0 && state.tokens.length > 0;
+    btn.disabled = !enabled;
+  });
+
+  el.btnUndo.disabled = state.tokens.length === 0;
+  el.btnClear.disabled = state.tokens.length === 0;
+  el.btnSubmit.disabled = !isComplete();
+}
+
+function renderLedger(){
+  const list = storage[state.puzzleKey] || [];
+  if (list.length === 0){
+    el.ledger.innerHTML = '<div class="empty">這張車牌還沒被破解，你會是第一個嗎？</div>';
+    return;
+  }
+  el.ledger.innerHTML = `<ul class="ledger-list">${list.map((s,i)=>
+    `<li><span class="eq">${escapeHtml(s)}</span><span class="idx">第 ${i+1} 解</span></li>`
+  ).join('')}</ul>`;
+}
+
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ======================================================================
+   6. 出題與作答互動
+   ====================================================================== */
+
+function setPuzzle(key){
+  state.puzzleKey = key;
+  state.digits = key.split('').map(Number);
+  state.used = [false,false,false,false];
+  state.tokens = [];
+  state.basicSolutions = solveEquations(state.digits);
+  state.stars = starRating(state.basicSolutions.length);
+
+  el.feedback.textContent = '';
+  el.feedback.className = 'feedback';
+
+  renderHero();
+  el.digitRow.innerHTML = state.digits.map((d,i)=>`<button class="key digit" data-idx="${i}">${d}</button>`).join('');
+  renderExpr();
+  renderLedger();
+  updateKeypad();
+}
+
+function chooseNumber(key, opts){
+  opts = opts || {};
+  setPuzzle(key);
+  state.selectedIdx = parseInt(key, 10);
+  drawAtlas();
+  el.atlasSelectedLabel.textContent = '目前選取：' + key;
+  updateAtlasDetail(key);
+  sfxSelect();
+  if (opts.scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function afterTokenChange(){
+  renderExpr();
+  updateKeypad();
+  el.feedback.textContent = '';
+  el.feedback.className = 'feedback';
+}
+
+function addDigit(idx){
+  if (state.used[idx] || !expectingOperand()) return;
+  state.used[idx] = true;
+  state.tokens.push({ type:'num', value: state.digits[idx], idx });
+  sfxClick();
+  afterTokenChange();
+}
+
+function addOperator(code){
+  const exp = expectingOperand();
+  const pb = parenBalance();
+  if (code === '+' || code === '-' || code === '×' || code === '÷'){
+    if (exp) return;
+    state.tokens.push({ type:'op', value: code });
+  } else if (code === '('){
+    if (!exp) return;
+    state.tokens.push({ type:'lparen' });
+  } else if (code === ')'){
+    if (exp || pb <= 0) return;
+    state.tokens.push({ type:'rparen' });
+  } else if (code === 'sqrt'){
+    if (!exp) return;
+    state.tokens.push({ type:'sqrt' });
+  } else if (code === 'fact'){
+    if (exp) return;
+    state.tokens.push({ type:'fact' });
+  } else if (code === 'eq'){
+    if (hasEq() || exp || pb !== 0 || state.tokens.length === 0) return;
+    state.tokens.push({ type:'eq' });
+  } else {
+    return;
+  }
+  sfxClick();
+  afterTokenChange();
+}
+
+function undoToken(){
+  if (state.tokens.length === 0) return;
+  const t = state.tokens.pop();
+  if (t.type === 'num') state.used[t.idx] = false;
+  sfxUndo();
+  afterTokenChange();
+}
+
+function clearTokens(){
+  state.tokens = [];
+  state.used = [false,false,false,false];
+  sfxUndo();
+  afterTokenChange();
+}
+
+function submitAnswer(){
+  if (state.tokens.length === 0){
+    setFeedback('請先列出算式再送出。', 'err'); return;
+  }
+  if (!hasEq()){
+    setFeedback('式子還沒有等號，按「=」把式子分成左右兩邊。', 'err'); return;
+  }
+  if (!state.used.every(Boolean)){
+    setFeedback('四個數字都要恰好用一次唷。', 'err'); return;
+  }
+  if (parenBalance() !== 0){
+    setFeedback('括號還沒配對完成。', 'err'); return;
+  }
+  if (expectingOperand()){
+    setFeedback('等號右邊還沒列完。', 'err'); return;
+  }
+
+  const eqIdx = state.tokens.findIndex(t => t.type === 'eq');
+  const leftTokens = state.tokens.slice(0, eqIdx);
+  const rightTokens = state.tokens.slice(eqIdx + 1);
+
+  let leftVal, rightVal;
+  try { leftVal = evalTokens(leftTokens); rightVal = evalTokens(rightTokens); }
+  catch(e){ setFeedback('算式格式有誤，再檢查一下。', 'err'); return; }
+
+  if (!Number.isFinite(leftVal) || !Number.isFinite(rightVal)){
+    setFeedback('這個算式無法計算（可能除以 0 或對負數開根號）。', 'err'); return;
+  }
+
+  if (Math.abs(leftVal - rightVal) < 1e-6){
+    const exprStr = tokensToString(state.tokens);
+    if (!storage[state.puzzleKey]) storage[state.puzzleKey] = [];
+    const isNew = !storage[state.puzzleKey].includes(exprStr);
+    if (isNew){
+      storage[state.puzzleKey].push(exprStr);
+      saveStorageToLS();
     }
+    setFeedback(isNew ? '答對了！左右兩邊相等 🎉' : '答對了！不過這個解法你已經破解過囉，換個算式再試試？', 'ok');
+    sfxCorrect();
+    flashPlate();
+    renderLedger();
+    updateAtlasStats();
+    drawAtlas();
+    updateAtlasDetail(state.puzzleKey);
+  } else {
+    setFeedback('左邊是 ' + formatNum(leftVal) + '，右邊是 ' + formatNum(rightVal) + '，兩邊不相等，再試試看！', 'err');
+  }
+}
 
-    function openUploadModal() {
-        const formula = document.getElementById('userFormula').value;
-        document.getElementById('uploadFormulaPreview').innerText = formula;
-        const title = document.getElementById('uploadTitle');
-        const desc = document.getElementById('uploadDesc');
-        
-        if (isCorrectionMode) {
-            title.innerText = "修正資料庫";
-            desc.innerHTML = "您正在修正此題的解答。<br>確定上傳嗎？";
-        } else {
-            title.innerText = "貢獻解答";
-            desc.innerHTML = "解出來了！<br>是否上傳至雲端？";
-        }
-        
-        document.getElementById('uploadStep1').style.display = 'block';
-        document.getElementById('uploadStep2').style.display = 'none';
-        document.getElementById('uploadStep3').style.display = 'none';
-        document.getElementById('uploadModal').style.display = 'flex';
-    }
+function setFeedback(msg, kind){
+  el.feedback.textContent = msg;
+  el.feedback.className = 'feedback ' + kind;
+  if (kind === 'err') sfxWrong();
+}
 
-    function processUpload() {
-        if (!navigator.onLine) {
-            alert("請連接網路以進行上傳！");
-            return;
-        }
-        document.getElementById('uploadStep1').style.display = 'none';
-        document.getElementById('uploadStep2').style.display = 'block';
+function flashPlate(){
+  el.plate.classList.remove('correct-flash');
+  void el.plate.offsetWidth; // restart animation
+  el.plate.classList.add('correct-flash');
+  setTimeout(()=> el.plate.classList.remove('correct-flash'), 950);
+}
 
-        // 真正的儲存動作 (存到 localStorage)
-        const currentFormula = document.getElementById('userFormula').value;
-        saveSolutionLocally(currentNumbers, currentFormula);
+el.keypad.addEventListener('click', e=>{
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  if (btn.dataset.idx !== undefined) addDigit(parseInt(btn.dataset.idx, 10));
+  else if (btn.dataset.op !== undefined) addOperator(btn.dataset.op);
+});
+el.btnUndo.addEventListener('click', undoToken);
+el.btnClear.addEventListener('click', clearTokens);
+el.btnSubmit.addEventListener('click', submitAnswer);
 
-        setTimeout(() => {
-            document.getElementById('uploadStep2').style.display = 'none';
-            document.getElementById('uploadStep3').style.display = 'block';
-            
-            const msg = document.getElementById('uploadSuccessMsg');
-            const successTitle = document.getElementById('uploadSuccessTitle');
-            
-            if (isCorrectionMode) {
-                successTitle.innerText = "資料庫已修復！";
-                msg.innerHTML = "感謝您的協助！<br>解答已儲存至本機。";
-                isCorrectionMode = false;
-                document.getElementById('btnUpload').className = 'btn-upload';
-                document.getElementById('btnUpload').innerText = '🚀 上傳神解';
-            } else {
-                successTitle.innerText = "上傳成功！";
-                if (currentDifficulty === 4 || !cachedSolution) {
-                    msg.innerHTML = "太神了！地獄級難題被你解開了！<br>解答已永久保存。";
-                } else {
-                    msg.innerHTML = "感謝貢獻！<br>解答已存入本機記憶體。";
-                }
-            }
-            // 更新狀態
-            calculateDifficultyLocal(); 
-        }, 1500);
-    }
+el.btnRandom.addEventListener('click', ()=>{
+  const idx = Math.floor(Math.random() * 10000);
+  chooseNumber(String(idx).padStart(4,'0'), { scroll:false });
+});
 
-    function getOnlineSolution() {
-        const modal = document.getElementById('solutionModal');
-        const textDiv = document.getElementById('solutionText');
-        const offlineDiv = document.getElementById('offlineMsg');
-        const btnFix = document.getElementById('btnFixSolution');
-        
-        modal.style.display = "flex";
-        textDiv.innerHTML = '<div class="loader"></div>';
-        offlineDiv.style.display = "none";
-        btnFix.style.display = 'none';
+function flashInvalid(input){
+  input.style.outline = '2px solid var(--brake-red)';
+  setTimeout(()=>{ input.style.outline = ''; }, 800);
+}
 
-        if (!navigator.onLine) {
-            textDiv.innerHTML = '';
-            offlineDiv.style.display = "block";
-            return;
-        }
+el.btnCustom.addEventListener('click', ()=>{
+  const v = el.customInput.value.trim();
+  if (!/^\d{1,4}$/.test(v)){ flashInvalid(el.customInput); return; }
+  chooseNumber(v.padStart(4,'0'), { scroll:false });
+  el.customInput.value = '';
+});
+el.customInput.addEventListener('keydown', e=>{ if (e.key === 'Enter') el.btnCustom.click(); });
 
-        setTimeout(() => {
-            btnFix.style.display = 'inline-block';
-            
-            // 優先顯示使用者存檔的答案
-            if (userSavedSolution) {
-                textDiv.innerHTML = `<strong>✨ 玩家貢獻解答：</strong><br><br>${userSavedSolution}`;
-            } else if (cachedSolution) {
-                textDiv.innerText = cachedSolution;
-            } else {
-                textDiv.innerHTML = "這題目前為 <strong>👿 地獄級</strong><br>電腦還沒算出來。<br><br>請解開它並上傳！";
-            }
-        }, 600);
-    }
+/* ======================================================================
+   7. 圖鑑（Canvas 網格）
+   ====================================================================== */
 
-    function closeModal(id) {
-        document.getElementById(id).style.display = "none";
-    }
+const ATLAS_SIZE = 700; // 邏輯座標大小（100 x 100 格）
+const CELL = ATLAS_SIZE / 100;
+let atlasFilterMode = 'all';
+const ctx = el.atlasCanvas.getContext('2d');
 
-    window.onclick = function(event) {
-        if (event.target.className === 'modal') {
-            event.target.style.display = "none";
-        }
-    }
+function initAtlasCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  el.atlasCanvas.width = ATLAS_SIZE * dpr;
+  el.atlasCanvas.height = ATLAS_SIZE * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
 
-    function calculateDifficultyLocal() {
-        const badge = document.getElementById('difficultyBadge');
-        badge.innerText = "分析中...";
-        badge.className = "difficulty-badge";
-        
-        // 先嘗試從 localStorage 讀取
-        userSavedSolution = loadSolutionLocally(currentNumbers);
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
-        setTimeout(() => {
-            let numObjs = currentNumbers.map(n => ({ val: n, label: String(n) }));
-            const result = findSolutionEngine(numObjs);
-            
-            // 如果有本地存檔，直接判定為已破解
-            if (userSavedSolution) {
-                cachedSolution = userSavedSolution; // 備用
-                currentDifficulty = 0; // 特殊狀態
-                badge.innerText = "🏆 已破解";
-                badge.className = "difficulty-badge diff-solved";
-                return;
-            }
+function drawAtlas(){
+  const bg = cssVar('--asphalt');
+  const dim = cssVar('--asphalt-3-active');
+  const gold = cssVar('--signal-yellow');
+  const blue = cssVar('--road-blue');
 
-            if (result) {
-                cachedSolution = result.expr;
-                let diff = result.difficulty;
-                currentDifficulty = diff;
-                let text = "", cls = "";
-                if (diff === 1) { text = "⭐ 簡單"; cls = "diff-easy"; }
-                else if (diff === 2) { text = "⭐⭐ 中等"; cls = "diff-medium"; }
-                else if (diff === 3) { text = "⭐⭐⭐ 困難"; cls = "diff-hard"; }
-                else { text = "👿 地獄"; cls = "diff-hell"; }
-                badge.innerText = text;
-                badge.className = "difficulty-badge " + cls;
-            } else {
-                cachedSolution = null;
-                currentDifficulty = 4;
-                badge.innerText = "👿 地獄";
-                badge.className = "difficulty-badge diff-hell";
-            }
-        }, 50);
-    }
+  ctx.clearRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
 
-    function findSolutionEngine(numObjs) {
-        const perms = getPermutations(numObjs);
-        for (let p of perms) {
-            let res = trySolve(p, ['+', '-']);
-            if (res) return { expr: res, difficulty: 1 };
-        }
-        for (let p of perms) {
-            let res = trySolve(p, ['+', '-', '*', '/']);
-            if (res) return { expr: res, difficulty: 2 };
-        }
-        let hardResult = trySolveHard(numObjs);
-        if (hardResult) return { expr: hardResult, difficulty: 3 };
+  for (let i = 0; i < 10000; i++){
+    const key = String(i).padStart(4, '0');
+    const solved = !!(storage[key] && storage[key].length > 0);
+    if (atlasFilterMode === 'solved' && !solved) continue;
+    if (atlasFilterMode === 'unsolved' && solved) continue;
+    const row = Math.floor(i / 100), col = i % 100;
+    ctx.fillStyle = solved ? gold : dim;
+    ctx.fillRect(col * CELL + 0.5, row * CELL + 0.5, CELL - 1, CELL - 1);
+  }
 
-        return null;
-    }
+  const srow = Math.floor(state.selectedIdx / 100), scol = state.selectedIdx % 100;
+  ctx.strokeStyle = blue;
+  ctx.lineWidth = 1.8;
+  ctx.strokeRect(scol * CELL + 1, srow * CELL + 1, CELL - 2, CELL - 2);
+}
 
-    function trySolve(objs, allowedOps) {
-        const [a, b, c, d] = objs;
-        for (let op1 of allowedOps) {
-            for (let op2 of allowedOps) {
-                for (let op3 of allowedOps) {
-                    try {
-                        if(isEqual(evalSafe(a.val, b.val, op1), evalSafe(c.val, d.val, op2))) 
-                            return `${a.label}${op1}${b.label}=${c.label}${op2}${d.label}`;
-                        if(isEqual(evalSafe(evalSafe(a.val, b.val, op1), c.val, op2), d.val)) 
-                            return `(${a.label}${op1}${b.label})${op2}${c.label}=${d.label}`;
-                        if(isEqual(a.val, evalSafe(d.val, evalSafe(b.val, c.val, op2), op3))) 
-                            return `${a.label}=${d.label}${op3}(${b.label}${op2}${c.label})`;
-                    } catch(e){}
-                }
-            }
-        }
-        return null;
-    }
+function updateAtlasStats(){
+  const count = Object.keys(storage).filter(k => storage[k] && storage[k].length > 0).length;
+  el.solvedCount.textContent = String(count);
+}
 
-    function trySolveHard(originalObjs) {
-        let variants = [];
-        function generateVariants(index, currentArr) {
-            if (index === 4) { variants.push(currentArr); return; }
-            generateVariants(index + 1, [...currentArr, originalObjs[index]]);
-            if (originalObjs[index].val === 9) { generateVariants(index + 1, [...currentArr, { val: 3, label: '√9' }]); }
-            else if (originalObjs[index].val === 4) { generateVariants(index + 1, [...currentArr, { val: 2, label: '√4' }]); }
-        }
-        generateVariants(0, []);
+function updateAtlasDetail(key){
+  const list = storage[key] || [];
+  if (list.length === 0){
+    el.atlasDetail.textContent = key + '：尚未破解';
+  } else {
+    el.atlasDetail.textContent = key + '：已破解，共 ' + list.length + ' 種解法（例如 ' + list[0] + '）';
+  }
+}
 
-        for (let v of variants) {
-            let isOriginal = true;
-            for(let i=0; i<4; i++) if(v[i].label !== originalObjs[i].label) isOriginal = false;
-            if (isOriginal) continue;
+function atlasIdxFromEvent(evt){
+  const rect = el.atlasCanvas.getBoundingClientRect();
+  const x = (evt.clientX - rect.left) * (ATLAS_SIZE / rect.width);
+  const y = (evt.clientY - rect.top) * (ATLAS_SIZE / rect.height);
+  const col = Math.floor(x / CELL), row = Math.floor(y / CELL);
+  if (col < 0 || col > 99 || row < 0 || row > 99) return -1;
+  return row * 100 + col;
+}
 
-            let perms = getPermutations(v);
-            for (let p of perms) {
-                let res = trySolve(p, ['+', '-', '*', '/']);
-                if (res) return res;
-            }
-        }
-        return null;
-    }
+el.atlasCanvas.addEventListener('click', e=>{
+  const idx = atlasIdxFromEvent(e);
+  if (idx < 0) return;
+  chooseNumber(String(idx).padStart(4, '0'), { scroll:true });
+});
 
-    function evalSafe(a, b, op) {
-        if (op === '/' && Math.abs(b) < 0.001) return 999999;
-        if (op === '+') return a+b; if (op === '-') return a-b;
-        if (op === '*') return a*b; if (op === '/') return a/b;
-        return 0;
-    }
-    function isEqual(a, b) { return Math.abs(a - b) < 0.00001; }
-    
-    function getPermutations(arr) {
-        if (arr.length <= 1) return [arr];
-        let output = [];
-        for (let i = 0; i < arr.length; i++) {
-            let current = arr[i];
-            let remaining = arr.slice(0, i).concat(arr.slice(i + 1));
-            let remainingPerms = getPermutations(remaining);
-            for (let j = 0; j < remainingPerms.length; j++) {
-                output.push([current].concat(remainingPerms[j]));
-            }
-        }
-        return output;
-    }
+el.atlasCanvas.addEventListener('mousemove', e=>{
+  const idx = atlasIdxFromEvent(e);
+  if (idx < 0){ el.atlasTooltip.style.display = 'none'; return; }
+  const key = String(idx).padStart(4, '0');
+  const list = storage[key] || [];
+  el.atlasTooltip.innerHTML = list.length
+    ? `<b>${key}</b>｜已破解 ${list.length} 解｜${escapeHtml(list[0])}`
+    : `<b>${key}</b>｜尚未破解`;
+  el.atlasTooltip.style.display = 'block';
+  const wrapRect = el.atlasCanvas.parentElement.getBoundingClientRect();
+  el.atlasTooltip.style.left = (e.clientX - wrapRect.left) + 'px';
+  el.atlasTooltip.style.top = (e.clientY - wrapRect.top) + 'px';
+});
+el.atlasCanvas.addEventListener('mouseleave', ()=>{ el.atlasTooltip.style.display = 'none'; });
 
-    function factorial(n) {
-        if (n < 0) return NaN;
-        if (n === 0 || n === 1) return 1;
-        let r = 1; for (let i = 2; i <= n; i++) r *= i; return r;
-    }
+el.atlasFilter.addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-f]');
+  if (!btn) return;
+  atlasFilterMode = btn.dataset.f;
+  el.atlasFilter.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b === btn));
+  drawAtlas();
+});
 
-    function checkAnswer() {
-        const formula = document.getElementById('userFormula').value.trim();
-        const resultEl = document.getElementById('result');
-        const uploadBtn = document.getElementById('btnUpload');
-        
-        uploadBtn.style.display = 'none';
+el.btnAtlasJump.addEventListener('click', ()=>{
+  const v = el.atlasJump.value.trim();
+  if (!/^\d{1,4}$/.test(v)){ flashInvalid(el.atlasJump); return; }
+  chooseNumber(v.padStart(4,'0'), { scroll:true });
+  el.atlasJump.value = '';
+});
+el.atlasJump.addEventListener('keydown', e=>{ if (e.key === 'Enter') el.btnAtlasJump.click(); });
 
-        if (!formula.includes('=')) { resultEl.innerText = "❌ 需要等號 (=)"; resultEl.className="error"; return; }
-        const digitsInFormula = formula.match(/\d/g);
-        if (!digitsInFormula) { resultEl.innerText = "❌ 請輸入數字"; resultEl.className="error"; return; }
+/* ======================================================================
+   8. 初始化 / 開始畫面
+   ====================================================================== */
 
-        const sortedCurrent = [...currentNumbers].sort().join('');
-        const sortedInput = [...digitsInFormula].sort().join('');
+let gameStarted = false;
+function startGame(){
+  if (gameStarted) return;
+  gameStarted = true;
 
-        if (sortedCurrent !== sortedInput) {
-            resultEl.innerHTML = `❌ 數字不符<br><small>題目:${sortedCurrent} 你打:${sortedInput}</small>`; 
-            resultEl.className="error"; return;
-        }
+  el.startScreen.style.display = 'none';
+  el.gameScreen.style.display = 'block';
 
-        let parseStr = formula.replace(/\^/g, '**').replace(/√/g, 'Math.sqrt');
-        while (parseStr.includes('!')) {
-            let regex = /(\d+)!/g; 
-            if (regex.test(parseStr)) {
-                parseStr = parseStr.replace(regex, 'factorial($1)');
-            } else if (/\)!/.test(parseStr)) {
-                let lastExcl = parseStr.lastIndexOf('!');
-                let openParen = -1;
-                let balance = 0;
-                for (let i = lastExcl - 1; i >= 0; i--) {
-                    if (parseStr[i] === ')') balance++;
-                    if (parseStr[i] === '(') balance--;
-                    if (balance === 0) { openParen = i; break; }
-                }
-                if (openParen !== -1) {
-                    let content = parseStr.substring(openParen, lastExcl);
-                    parseStr = parseStr.substring(0, openParen) + `factorial(${content})` + parseStr.substring(lastExcl + 1);
-                } else { resultEl.innerText = "❌ 階乘格式錯"; resultEl.className="error"; return; }
-            } else { resultEl.innerText = "❌ 階乘符號錯"; resultEl.className="error"; return; }
-        }
+  ensureAudioCtx();
+  el.bgm.volume = 0.55;
+  el.bgm.play().catch(()=>{ /* 瀏覽器阻擋自動播放或找不到 game.mp3，安靜略過 */ });
 
-        const sides = parseStr.split('=');
-        if (sides.length !== 2) { resultEl.innerText = "❌ 只能有一個等號"; resultEl.className="error"; return; }
+  initAtlasCanvas();
+  const startIdx = Math.floor(Math.random() * 10000);
+  chooseNumber(String(startIdx).padStart(4, '0'), { scroll:false });
+  updateAtlasStats();
+}
 
-        try {
-            const leftVal = eval(sides[0]);
-            const rightVal = eval(sides[1]);
-            if (Math.abs(leftVal - rightVal) < 0.000001) {
-                resultEl.innerText = "🎉 答案正確！";
-                resultEl.className = "success";
-                
-                if (isCorrectionMode) {
-                    uploadBtn.innerText = "🔧 上傳修正";
-                    uploadBtn.className = "btn-upload fix-mode";
-                } else {
-                    uploadBtn.innerText = "🚀 上傳神解";
-                    uploadBtn.className = "btn-upload";
-                }
-                uploadBtn.style.display = 'inline-block';
-                
-            } else {
-                resultEl.innerHTML = `❌ 等式不成立<br><small>${parseFloat(leftVal.toFixed(2))} ≠ ${parseFloat(rightVal.toFixed(2))}</small>`;
-                resultEl.className="error";
-            }
-        } catch (e) {
-            resultEl.innerText = "❌ 算式錯誤";
-            resultEl.className="error";
-        }
-    }
+el.btnStart.addEventListener('click', startGame);
+window.addEventListener('resize', ()=>{ if (gameStarted){ initAtlasCanvas(); drawAtlas(); } });
+
 </script>
-
 </body>
 </html>
