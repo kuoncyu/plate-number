@@ -367,6 +367,61 @@
     margin-top:3px;
   }
 
+  /* ---------- admin suggested-answer box ---------- */
+  .admin-box{
+    background:var(--asphalt-2);
+    border:1px dashed var(--line-dim);
+    border-radius:var(--radius-btn);
+    padding:14px 16px;
+  }
+  .admin-locked-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .admin-locked-row input[type=password]{
+    flex:1;
+    min-width:140px;
+    background:var(--asphalt-3);
+    border:1px solid var(--line-dim);
+    color:var(--go-text);
+    border-radius:var(--radius-btn);
+    padding:9px 10px;
+    font-size:14px;
+  }
+  .admin-locked-row input[type=password]:focus{
+    outline:2px solid var(--road-blue);
+    outline-offset:1px;
+  }
+  .admin-note{
+    margin:8px 0 0;
+    font-size:12px;
+    color:var(--dim-text);
+    line-height:1.6;
+  }
+  .admin-unlocked-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .admin-tier{
+    font-size:12px;
+    color:var(--dim-text);
+  }
+  .admin-answer{
+    margin-top:10px;
+    font-family:'Oswald', sans-serif;
+    font-size:18px;
+    letter-spacing:0.5px;
+    color:var(--signal-yellow);
+    background:var(--asphalt-3);
+    border-radius:6px;
+    padding:10px 12px;
+    overflow-wrap:anywhere;
+  }
+
   /* ---------- atlas ---------- */
   .atlas-stats{
     display:flex;
@@ -673,6 +728,14 @@
 
   <div class="lane-divider"></div>
 
+  <!-- ADMIN SUGGESTED ANSWER -->
+  <section>
+    <h2 class="section-title">建議答案（管理員專用）</h2>
+    <div class="admin-box" id="adminBox"></div>
+  </section>
+
+  <div class="lane-divider"></div>
+
   <!-- ATLAS -->
   <section>
     <h2 class="section-title">車牌圖鑑 0000–9999</h2>
@@ -825,15 +888,32 @@ function subsetsOf(mask){
   return subs;
 }
 
-// 建立每個數字子集合（非空真子集）用 +-×÷ 可湊出的所有數值／算式，用於難度評分
-function buildCandidates(digits, capPerSubset){
+// 依「使用工具」擴充候選值：√ 與 ! 屬於一元運算，只在對應選項開啟時套用
+function unaryExtend(cands, opts){
+  const out = cands.slice();
+  for (const c of cands){
+    if (opts.useSqrt && c.v >= 0 && c.v <= 10000){
+      out.push({ v: Math.sqrt(c.v), e: '√' + wrapC(c), atomic: true });
+    }
+    if (opts.useFact && Number.isInteger(c.v) && c.v >= 0 && c.v <= 12){
+      out.push({ v: factorial(c.v), e: wrapC(c) + '!', atomic: true });
+    }
+  }
+  return out;
+}
+
+// 建立每個數字子集合（非空真子集）在指定工具範圍內可湊出的所有數值／算式
+// opts: { useSqrt, usePow, useFact } — 依難度分級開放不同工具
+function buildCandidates(digits, opts, capPerSubset){
   const memo = new Map();
   function solveMask(mask){
     if (memo.has(mask)) return memo.get(mask);
     let cands;
     if ((mask & (mask - 1)) === 0){
       const idx = Math.log2(mask);
-      cands = [{ v: digits[idx], e: String(digits[idx]), atomic: true }];
+      let base = [{ v: digits[idx], e: String(digits[idx]), atomic: true }];
+      base = unaryExtend(base, opts);
+      cands = dedupCap(base, capPerSubset);
     } else {
       let raw = [];
       for (const A of subsetsOf(mask)){
@@ -847,8 +927,13 @@ function buildCandidates(digits, capPerSubset){
           raw.push({ v: x.v * y.v, e: wrapC(x) + '×' + wrapC(y), atomic: false });
           raw.push({ v: x.v / y.v, e: wrapC(x) + '÷' + wrapC(y), atomic: false });
           raw.push({ v: y.v / x.v, e: wrapC(y) + '÷' + wrapC(x), atomic: false });
+          if (opts.usePow){
+            raw.push({ v: Math.pow(x.v, y.v), e: wrapC(x) + '^' + wrapC(y), atomic: false });
+            raw.push({ v: Math.pow(y.v, x.v), e: wrapC(y) + '^' + wrapC(x), atomic: false });
+          }
         }
       }
+      raw = unaryExtend(raw, opts);
       cands = dedupCap(raw, capPerSubset);
     }
     memo.set(mask, cands);
@@ -858,9 +943,9 @@ function buildCandidates(digits, capPerSubset){
   return memo;
 }
 
-// 找出所有「把四個數字拆成左右兩邊、兩邊數值相等」的等式數量，用於難度星級評分
-function solveEquations(digits, capPerSubset){
-  const memo = buildCandidates(digits, capPerSubset || 250);
+// 找出所有「把四個數字拆成左右兩邊、兩邊數值相等」的等式
+function solveEquations(digits, opts, capPerSubset){
+  const memo = buildCandidates(digits, opts, capPerSubset || 250);
   const eps = 1e-6;
   const results = new Set();
   for (let A = 1; A <= 14; A++){
@@ -879,12 +964,35 @@ function solveEquations(digits, capPerSubset){
   return Array.from(results);
 }
 
-function starRating(count){
-  if (count === 0) return 5;
-  if (count < 15) return 4;
-  if (count < 30) return 3;
-  if (count < 55) return 2;
-  return 1;
+// 分級難度評分：
+//   只需 +-×÷ 即可解出 → 偏易（1～2 星，依解法數量細分）
+//   需要 √ 或 ^ 才能解出 → 中等（3 星）
+//   需要 ! （階乘）才能解出 → 偏難（4 星）
+//   目前找不到已知解法 → 極限難度（5 星）
+const TIER_LABEL = {
+  basic: '只需要加減乘除即可解出',
+  medium: '需要用到開根號或次方才能解出',
+  hard: '需要用到階乘才能解出',
+  none: '目前找不到已知解法（可能是極限難度車牌）',
+};
+
+function ratePuzzle(digits){
+  const basic = solveEquations(digits, { useSqrt:false, usePow:false, useFact:false }, 250);
+  if (basic.length > 0){
+    const example = basic.slice().sort((a,b)=>a.length-b.length)[0];
+    return { stars: basic.length >= 15 ? 1 : 2, tier:'basic', example };
+  }
+  const medium = solveEquations(digits, { useSqrt:true, usePow:true, useFact:false }, 150);
+  if (medium.length > 0){
+    const example = medium.slice().sort((a,b)=>a.length-b.length)[0];
+    return { stars: 3, tier:'medium', example };
+  }
+  const hard = solveEquations(digits, { useSqrt:true, usePow:true, useFact:true }, 60);
+  if (hard.length > 0){
+    const example = hard.slice().sort((a,b)=>a.length-b.length)[0];
+    return { stars: 4, tier:'hard', example };
+  }
+  return { stars: 5, tier:'none', example: null };
 }
 
 /* ======================================================================
@@ -914,7 +1022,8 @@ const state = {
   used: [false,false,false,false],
   tokens: [],
   stars: 1,
-  basicSolutions: [],
+  suggestedAnswer: null,
+  adminUnlocked: false,
   selectedIdx: 0,
   muted: false,
 };
@@ -989,6 +1098,7 @@ const el = {
   atlasCanvas: document.getElementById('atlasCanvas'),
   atlasTooltip: document.getElementById('atlasTooltip'),
   atlasDetail: document.getElementById('atlasDetail'),
+  adminBox: document.getElementById('adminBox'),
 };
 
 /* ======================================================================
@@ -1138,6 +1248,58 @@ function escapeHtml(s){
 }
 
 /* ======================================================================
+   5b. 建議答案（管理員專用，需密碼解鎖）
+   ====================================================================== */
+
+// 老師／管理員可自行修改這組密碼。注意：這只是給教室情境用的「不要偷看」
+// 提醒機制，密碼是寫在前端程式碼裡的明文，並非真正的安全防護。
+const ADMIN_PASSWORD = 'admin123';
+
+function renderAdminBox(){
+  if (!state.adminUnlocked){
+    el.adminBox.innerHTML =
+      `<div class="admin-locked-row">
+        <input type="password" id="adminPwInput" placeholder="輸入管理員密碼">
+        <button class="btn" id="btnAdminUnlock">🔒 解鎖查看</button>
+      </div>
+      <p class="admin-note">避免學生還沒解完就偷看答案，僅老師／管理員輸入密碼後才能查看建議答案。</p>`;
+  } else {
+    const sug = state.suggestedAnswer || { expr:null, tierLabel:'' };
+    el.adminBox.innerHTML =
+      `<div class="admin-unlocked-row">
+        <span class="admin-tier">${escapeHtml(sug.tierLabel)}</span>
+        <button class="btn ghost" id="btnAdminLock">🔓 重新鎖定</button>
+      </div>
+      <div class="admin-answer">${sug.expr ? escapeHtml(sug.expr) : '目前找不到已知解法'}</div>`;
+  }
+}
+
+el.adminBox.addEventListener('click', e=>{
+  if (e.target.closest('#btnAdminUnlock')){
+    const input = document.getElementById('adminPwInput');
+    if (input && input.value === ADMIN_PASSWORD){
+      state.adminUnlocked = true;
+      renderAdminBox();
+    } else if (input){
+      input.style.outline = '2px solid var(--brake-red)';
+      input.value = '';
+      setTimeout(()=>{ input.style.outline = ''; }, 700);
+    }
+    return;
+  }
+  if (e.target.closest('#btnAdminLock')){
+    state.adminUnlocked = false;
+    renderAdminBox();
+  }
+});
+el.adminBox.addEventListener('keydown', e=>{
+  if (e.key === 'Enter' && e.target.id === 'adminPwInput'){
+    const btn = document.getElementById('btnAdminUnlock');
+    if (btn) btn.click();
+  }
+});
+
+/* ======================================================================
    6. 出題與作答互動
    ====================================================================== */
 
@@ -1146,8 +1308,10 @@ function setPuzzle(key){
   state.digits = key.split('').map(Number);
   state.used = [false,false,false,false];
   state.tokens = [];
-  state.basicSolutions = solveEquations(state.digits);
-  state.stars = starRating(state.basicSolutions.length);
+
+  const rating = ratePuzzle(state.digits);
+  state.stars = rating.stars;
+  state.suggestedAnswer = { expr: rating.example, tierLabel: TIER_LABEL[rating.tier] };
 
   el.feedback.textContent = '';
   el.feedback.className = 'feedback';
@@ -1156,6 +1320,7 @@ function setPuzzle(key){
   el.digitRow.innerHTML = state.digits.map((d,i)=>`<button class="key digit" data-idx="${i}">${d}</button>`).join('');
   renderExpr();
   renderLedger();
+  renderAdminBox();
   updateKeypad();
 }
 
