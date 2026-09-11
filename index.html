@@ -614,7 +614,12 @@
     align-items:flex-start;
     gap:10px;
   }
-  #btnMute{
+  .header-btns{
+    display:flex;
+    gap:8px;
+    flex-shrink:0;
+  }
+  #btnMute, #btnSettings, #btnAdminHelp{
     background:var(--asphalt-3);
     color:var(--go-text);
     border-radius:999px;
@@ -622,13 +627,202 @@
     font-size:16px;
     flex-shrink:0;
   }
-  #btnMute:hover{ background:var(--asphalt-3-active); }
+  #btnAdminHelp{ font-family:'Oswald', sans-serif; font-weight:700; font-size:17px; }
+  #btnMute:hover, #btnSettings:hover, #btnAdminHelp:hover{ background:var(--asphalt-3-active); }
 
   .credit-line{
     font-size:12px;
     color:var(--dim-text);
     margin-top:8px;
   }
+
+  /* ---------- modal overlays (settings / admin) ---------- */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,11,13,0.68);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-card{
+    background:var(--asphalt-2);
+    border:1px solid var(--line-dim);
+    border-radius:14px;
+    padding:22px;
+    width:100%;
+    max-width:340px;
+    max-height:85vh;
+    overflow-y:auto;
+  }
+  .modal-card-wide{ max-width:420px; }
+  .modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+  }
+  .modal-head h3{
+    margin:0;
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:19px;
+    color:var(--go-text);
+  }
+  .modal-close{
+    background:var(--asphalt-3);
+    color:var(--go-text);
+    border-radius:999px;
+    width:30px; height:30px;
+    font-size:14px;
+    flex-shrink:0;
+  }
+  .modal-close:hover{ background:var(--asphalt-3-active); }
+  .modal-divider{
+    height:1px;
+    background:var(--line-dim);
+    opacity:0.6;
+    margin:20px 0;
+  }
+  .settings-row{
+    margin-bottom:18px;
+  }
+  .settings-row .settings-label-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:var(--dim-text);
+    margin-bottom:6px;
+  }
+  .settings-row .settings-label-row b{
+    color:var(--go-text);
+    font-family:'Oswald', sans-serif;
+    font-weight:500;
+  }
+  .settings-row input[type=range]{
+    width:100%;
+    accent-color:var(--road-blue);
+  }
+  .btn-fullscreen{
+    width:100%;
+    text-align:center;
+  }
+
+  /* ---------- how-to-play (inside settings) ---------- */
+  .howto h4{
+    margin:0 0 10px;
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--go-text);
+  }
+  .howto p{
+    margin:0 0 10px;
+    font-size:13px;
+    line-height:1.75;
+    color:var(--dim-text);
+  }
+  .howto-note{
+    font-size:12px !important;
+    opacity:0.85;
+  }
+  .howto-example{
+    background:var(--asphalt-3);
+    border-radius:10px;
+    padding:14px 12px;
+    margin-top:14px;
+  }
+  .howto-example-title{
+    font-size:12px;
+    font-weight:600;
+    color:var(--signal-yellow);
+    margin-bottom:10px;
+    text-align:center;
+  }
+  .howto-row, .howto-eq, .howto-result{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+  .howto-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:32px;
+    height:32px;
+    background:var(--plate-white);
+    color:var(--ink);
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:17px;
+    border-radius:6px;
+    padding:0 5px;
+  }
+  .howto-chip.small{
+    min-width:27px;
+    height:27px;
+    font-size:14px;
+  }
+  .howto-op{
+    color:var(--signal-yellow);
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:16px;
+  }
+  .howto-eqsign{
+    color:var(--signal-yellow);
+    font-weight:700;
+    font-size:17px;
+    margin:0 3px;
+  }
+  .howto-arrow{
+    text-align:center;
+    font-size:11px;
+    color:var(--dim-text);
+    margin:9px 0;
+  }
+  .howto-result{
+    font-family:'Oswald', sans-serif;
+    font-size:17px;
+    color:var(--go-text);
+  }
+  .howto-check{
+    font-family:'Noto Sans TC', sans-serif;
+    font-size:12px;
+    color:var(--signal-yellow);
+    margin-left:6px;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabbar{
+    display:flex;
+    gap:8px;
+    margin:20px 0 0;
+  }
+  .tab-btn{
+    flex:1;
+    background:var(--asphalt-2);
+    color:var(--dim-text);
+    border:1px solid var(--line-dim);
+    border-radius:10px;
+    padding:11px 0;
+    font-family:'Oswald', sans-serif;
+    font-weight:500;
+    font-size:15px;
+    text-align:center;
+  }
+  .tab-btn.active{
+    background:var(--road-blue);
+    color:var(--go-text);
+    border-color:var(--road-blue);
+  }
+  .tab-btn:hover:not(.active){ background:var(--asphalt-3); }
+  .tab-panel{ margin-top:22px; }
 </style>
 </head>
 <body>
@@ -641,7 +835,7 @@
   <h1>車牌計算挑戰</h1>
   <p class="desc">隨機抽出一張車牌，用四個數字加減乘除、開根號、階乘，把式子拆成兩邊，讓等號左右真正相等。破解過的號碼會留在圖鑑裡，隨時可以回去找出更多解法。</p>
   <button class="btn-start" id="btnStart">🔑 發動引擎，開始挑戰</button>
-  <p class="hint-audio">點擊開始即會播放遊戲音樂與音效</p>
+  <p class="hint-audio">點擊開始即會播放遊戲音樂與音效，並自動進入全螢幕</p>
   <p class="credit">作者：郭柏宏　版本：20260910</p>
 </div>
 
@@ -651,11 +845,98 @@
     <div class="header-top">
       <div>
         <p class="title">車牌計算挑戰</p>
-        <p class="sub">隨機抽出一張車牌，用四個數字加減乘除、開根號、階乘，把式子拆成兩邊，讓等號左右真正相等。破解過的號碼會留在圖鑑裡，隨時可以回去找出更多解法。</p>
+        <p class="sub">隨機抽出一張車牌，讓等號兩邊真正相等。點右上角 ⚙️ 查看詳細玩法與範例。</p>
       </div>
-      <button id="btnMute" title="靜音切換">🔊</button>
+      <div class="header-btns">
+        <button id="btnMute" title="靜音切換">🔊</button>
+        <button id="btnAdminHelp" title="建議答案">?</button>
+        <button id="btnSettings" title="設定">⚙️</button>
+      </div>
     </div>
   </header>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="play">🎮 遊戲</button>
+    <button class="tab-btn" data-tab="atlas">🗺️ 圖鑑</button>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div class="modal-overlay" id="settingsOverlay">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-head">
+        <h3>⚙️ 設定</h3>
+        <button class="modal-close" id="btnSettingsClose">✕</button>
+      </div>
+
+      <div class="howto">
+        <h4>🎮 遊戲玩法</h4>
+        <p>隨機抽出一張車牌，用四個數字加減乘除、開根號、階乘，把式子拆成兩邊，讓等號左右真正相等。破解過的號碼會留在圖鑑裡，隨時可以回去找出更多解法。</p>
+        <p>每張車牌的四個數字都要恰好各用一次，分別放進等號左右兩邊；可自由排序、加括號、開根號、次方與取階乘，只要兩邊數值真正相等就算過關。</p>
+        <p class="howto-note">階乘僅適用於 0～12 的非負整數；除以 0 或負數開根號視為無效算式。</p>
+
+        <div class="howto-example">
+          <div class="howto-example-title">範例① 基本運算</div>
+          <div class="howto-row">
+            <span class="howto-chip">1</span><span class="howto-chip">2</span><span class="howto-chip">3</span><span class="howto-chip">4</span>
+          </div>
+          <div class="howto-arrow">↓ 拆成兩邊、自由排列</div>
+          <div class="howto-eq">
+            <span class="howto-chip small">1</span><span class="howto-op">−</span><span class="howto-chip small">2</span>
+            <span class="howto-eqsign">=</span>
+            <span class="howto-chip small">3</span><span class="howto-op">−</span><span class="howto-chip small">4</span>
+          </div>
+          <div class="howto-arrow">↓ 左右分別算出來</div>
+          <div class="howto-result">
+            <span>−1</span><span class="howto-eqsign">=</span><span>−1</span>
+            <span class="howto-check">✅ 相等，過關！</span>
+          </div>
+        </div>
+
+        <div class="howto-example">
+          <div class="howto-example-title">範例② 進階工具（√、!）</div>
+          <div class="howto-row">
+            <span class="howto-chip">1</span><span class="howto-chip">2</span><span class="howto-chip">3</span><span class="howto-chip">9</span>
+          </div>
+          <div class="howto-arrow">↓ 用階乘與根號</div>
+          <div class="howto-eq">
+            <span class="howto-chip small">3</span><span class="howto-op">!</span><span class="howto-op">−</span><span class="howto-chip small">1</span>
+            <span class="howto-eqsign">=</span>
+            <span class="howto-op">√</span><span class="howto-chip small">9</span><span class="howto-op">+</span><span class="howto-chip small">2</span>
+          </div>
+          <div class="howto-arrow">↓ 3!=6，6−1=5　／　√9=3，3+2=5</div>
+          <div class="howto-result">
+            <span>5</span><span class="howto-eqsign">=</span><span>5</span>
+            <span class="howto-check">✅ 相等，過關！</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="settings-row">
+        <div class="settings-label-row"><span>音效音量</span><b id="sfxVolumeLabel">70%</b></div>
+        <input type="range" id="sfxVolume" min="0" max="100" value="70">
+      </div>
+      <div class="settings-row">
+        <div class="settings-label-row"><span>音樂音量</span><b id="musicVolumeLabel">55%</b></div>
+        <input type="range" id="musicVolume" min="0" max="100" value="55">
+      </div>
+      <button class="btn primary btn-fullscreen" id="btnFullscreenToggle">⛶ 切換全螢幕</button>
+    </div>
+  </div>
+
+  <!-- ADMIN SUGGESTED ANSWER MODAL -->
+  <div class="modal-overlay" id="adminOverlay">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>❓ 建議答案</h3>
+        <button class="modal-close" id="btnAdminClose">✕</button>
+      </div>
+      <div class="admin-box" id="adminBox"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tabPlay">
 
   <!-- HERO -->
   <section class="hero">
@@ -730,15 +1011,9 @@
     </div>
   </section>
 
-  <div class="lane-divider"></div>
+  </div>
 
-  <!-- ADMIN SUGGESTED ANSWER -->
-  <section>
-    <h2 class="section-title">建議答案（管理員專用）</h2>
-    <div class="admin-box" id="adminBox"></div>
-  </section>
-
-  <div class="lane-divider"></div>
+  <div class="tab-panel" id="tabAtlas" style="display:none;">
 
   <!-- ATLAS -->
   <section>
@@ -771,9 +1046,9 @@
     <div class="atlas-detail" id="atlasDetail"></div>
   </section>
 
+  </div>
+
   <footer>
-    每張車牌的四個數字都要恰好各用一次，分別放進等號左右兩邊；可自由排序、加括號、開根號、次方與取階乘，只要兩邊數值真正相等就算過關。<br>
-    階乘僅適用於 0～12 的非負整數；除以 0 或負數開根號視為無效算式。
     <div class="credit-line">作者：郭柏宏　版本：20260910</div>
   </footer>
 
@@ -1067,7 +1342,30 @@ const state = {
   adminUnlocked: false,
   selectedIdx: 0,
   muted: false,
+  sfxVolume: 0.7,
+  musicVolume: 0.55,
 };
+
+const SETTINGS_KEY = 'plate24_settings_v1';
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (typeof s.sfxVolume === 'number') state.sfxVolume = s.sfxVolume;
+    if (typeof s.musicVolume === 'number') state.musicVolume = s.musicVolume;
+    if (typeof s.muted === 'boolean') state.muted = s.muted;
+  }catch(e){ /* ignore */ }
+}
+function saveSettings(){
+  try{
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      sfxVolume: state.sfxVolume, musicVolume: state.musicVolume, muted: state.muted,
+    }));
+  }catch(e){ /* ignore */ }
+}
+loadSettings();
+
 
 function hasEq(){ return state.tokens.some(t => t.type === 'eq'); }
 function lastTokenType(){
@@ -1115,6 +1413,14 @@ const el = {
   gameScreen: document.getElementById('gameScreen'),
   btnStart: document.getElementById('btnStart'),
   btnMute: document.getElementById('btnMute'),
+  btnSettings: document.getElementById('btnSettings'),
+  settingsOverlay: document.getElementById('settingsOverlay'),
+  btnSettingsClose: document.getElementById('btnSettingsClose'),
+  sfxVolume: document.getElementById('sfxVolume'),
+  sfxVolumeLabel: document.getElementById('sfxVolumeLabel'),
+  musicVolume: document.getElementById('musicVolume'),
+  musicVolumeLabel: document.getElementById('musicVolumeLabel'),
+  btnFullscreenToggle: document.getElementById('btnFullscreenToggle'),
   bgm: document.getElementById('bgm'),
   plate: document.getElementById('plate'),
   plateDigits: document.getElementById('plateDigits'),
@@ -1141,6 +1447,12 @@ const el = {
   atlasTooltip: document.getElementById('atlasTooltip'),
   atlasDetail: document.getElementById('atlasDetail'),
   adminBox: document.getElementById('adminBox'),
+  btnAdminHelp: document.getElementById('btnAdminHelp'),
+  adminOverlay: document.getElementById('adminOverlay'),
+  btnAdminClose: document.getElementById('btnAdminClose'),
+  tabbar: document.getElementById('tabbar'),
+  tabPlay: document.getElementById('tabPlay'),
+  tabAtlas: document.getElementById('tabAtlas'),
 };
 
 /* ======================================================================
@@ -1165,8 +1477,9 @@ function playTone(freq, duration, type, vol, delay){
   const gain = ctx.createGain();
   osc.type = type || 'sine';
   osc.frequency.setValueAtTime(freq, t0);
+  const peak = (vol == null ? 0.12 : vol) * state.sfxVolume;
   gain.gain.setValueAtTime(0, t0);
-  gain.gain.linearRampToValueAtTime(vol == null ? 0.12 : vol, t0 + 0.01);
+  gain.gain.linearRampToValueAtTime(peak, t0 + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
   osc.connect(gain);
   gain.connect(ctx.destination);
@@ -1189,9 +1502,93 @@ function setMuted(m){
   state.muted = m;
   el.btnMute.textContent = m ? '🔇' : '🔊';
   if (m){ el.bgm.pause(); }
-  else { el.bgm.play().catch(()=>{}); }
+  else { el.bgm.volume = state.musicVolume; el.bgm.play().catch(()=>{}); }
+  saveSettings();
 }
 el.btnMute.addEventListener('click', ()=> setMuted(!state.muted));
+
+/* ---------- 設定面板：音量調整、全螢幕 ---------- */
+
+function openSettings(){
+  el.sfxVolume.value = Math.round(state.sfxVolume * 100);
+  el.sfxVolumeLabel.textContent = el.sfxVolume.value + '%';
+  el.musicVolume.value = Math.round(state.musicVolume * 100);
+  el.musicVolumeLabel.textContent = el.musicVolume.value + '%';
+  el.settingsOverlay.classList.add('show');
+}
+function closeSettings(){ el.settingsOverlay.classList.remove('show'); }
+
+el.btnSettings.addEventListener('click', openSettings);
+el.btnSettingsClose.addEventListener('click', closeSettings);
+el.settingsOverlay.addEventListener('click', e=>{
+  if (e.target === el.settingsOverlay) closeSettings();
+});
+
+/* ---------- 建議答案彈窗 ---------- */
+
+function openAdmin(){
+  renderAdminBox();
+  el.adminOverlay.classList.add('show');
+}
+function closeAdmin(){ el.adminOverlay.classList.remove('show'); }
+
+el.btnAdminHelp.addEventListener('click', openAdmin);
+el.btnAdminClose.addEventListener('click', closeAdmin);
+el.adminOverlay.addEventListener('click', e=>{
+  if (e.target === el.adminOverlay) closeAdmin();
+});
+
+/* ---------- 分頁切換：遊戲／圖鑑 ---------- */
+
+el.tabbar.addEventListener('click', e=>{
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  const tab = btn.dataset.tab;
+  el.tabbar.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+  el.tabPlay.style.display = tab === 'play' ? '' : 'none';
+  el.tabAtlas.style.display = tab === 'atlas' ? '' : 'none';
+  if (tab === 'atlas'){ drawAtlas(); updateAtlasStats(); }
+});
+
+el.sfxVolume.addEventListener('input', e=>{
+  state.sfxVolume = parseInt(e.target.value, 10) / 100;
+  el.sfxVolumeLabel.textContent = e.target.value + '%';
+  saveSettings();
+});
+el.sfxVolume.addEventListener('change', ()=> sfxClick());
+
+el.musicVolume.addEventListener('input', e=>{
+  state.musicVolume = parseInt(e.target.value, 10) / 100;
+  el.musicVolumeLabel.textContent = e.target.value + '%';
+  if (!state.muted) el.bgm.volume = state.musicVolume;
+  saveSettings();
+});
+
+function isFullscreen(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function requestFullscreenSafe(){
+  const target = document.documentElement;
+  const req = target.requestFullscreen || target.webkitRequestFullscreen;
+  if (!req) return;
+  try{
+    const p = req.call(target);
+    if (p && p.catch) p.catch(()=>{ /* 使用者或瀏覽器拒絕，安靜略過 */ });
+  }catch(e){ /* 安靜略過 */ }
+}
+function exitFullscreenSafe(){
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (!exit) return;
+  try{
+    const p = exit.call(document);
+    if (p && p.catch) p.catch(()=>{});
+  }catch(e){ /* ignore */ }
+}
+function toggleFullscreen(){
+  if (isFullscreen()) exitFullscreenSafe();
+  else requestFullscreenSafe();
+}
+el.btnFullscreenToggle.addEventListener('click', toggleFullscreen);
 
 
 /* ======================================================================
@@ -1682,8 +2079,13 @@ function startGame(){
   el.gameScreen.style.display = 'block';
 
   ensureAudioCtx();
-  el.bgm.volume = 0.55;
-  el.bgm.play().catch(()=>{ /* 瀏覽器阻擋自動播放或找不到 game.mp3，安靜略過 */ });
+  el.btnMute.textContent = state.muted ? '🔇' : '🔊';
+  if (!state.muted){
+    el.bgm.volume = state.musicVolume;
+    el.bgm.play().catch(()=>{ /* 瀏覽器阻擋自動播放或找不到 game.mp3，安靜略過 */ });
+  }
+
+  requestFullscreenSafe();
 
   initAtlasCanvas();
   const startIdx = Math.floor(Math.random() * 10000);
