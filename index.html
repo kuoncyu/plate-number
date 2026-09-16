@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>車牌計算挑戰｜等式平衡工程師</title>
+<title>車牌計算挑戰｜湊出 24</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -131,15 +131,17 @@
 
   .plate-digits{
     display:flex;
+    align-items:baseline;
     justify-content:center;
-    gap:10px;
+    gap:8px;
     font-family:'Oswald', sans-serif;
     font-weight:700;
-    font-size:54px;
+    font-size:48px;
     color:var(--ink);
     line-height:1;
     user-select:none;
     letter-spacing:2px;
+    flex-wrap:wrap;
   }
   .plate-digits .d{
     min-width:0.62em;
@@ -147,6 +149,9 @@
   }
   .plate-digits .d.used{
     color:#C7C3B4;
+  }
+  .plate-prefix{
+    margin-right:2px;
   }
 
   .plate-foot{
@@ -177,6 +182,36 @@
     width:100%;
     max-width:460px;
   }
+
+  .difficulty-picker{
+    width:100%;
+    max-width:460px;
+    margin-top:14px;
+    text-align:center;
+  }
+  .dp-label{
+    font-size:12px;
+    color:var(--dim-text);
+    display:block;
+    margin-bottom:8px;
+  }
+  .dp-buttons{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .dp-btn{
+    background:var(--asphalt-3);
+    color:var(--go-text);
+    border-radius:8px;
+    padding:9px 14px;
+    font-family:'Oswald', sans-serif;
+    font-size:14px;
+    letter-spacing:0.5px;
+  }
+  .dp-btn:hover:not(:disabled){ background:var(--asphalt-3-active); }
+  .dp-btn:disabled{ opacity:0.35; cursor:not-allowed; }
 
   button{
     font-family:'Noto Sans TC', sans-serif;
@@ -957,6 +992,16 @@
         <button class="btn" id="btnCustom">挑戰指定號碼</button>
       </div>
     </div>
+    <div class="difficulty-picker" id="difficultyPicker">
+      <span class="dp-label">指定難度出題：</span>
+      <div class="dp-buttons" id="dpButtons">
+        <button class="dp-btn" data-star="1" disabled>★1</button>
+        <button class="dp-btn" data-star="2" disabled>★2</button>
+        <button class="dp-btn" data-star="3" disabled>★3</button>
+        <button class="dp-btn" data-star="4" disabled>★4</button>
+        <button class="dp-btn" data-star="5" disabled>★5</button>
+      </div>
+    </div>
   </section>
 
   <div class="lane-divider"></div>
@@ -1065,12 +1110,29 @@
    1. 數學核心：階乘 / 算式求值 / 解題引擎
    ====================================================================== */
 
+// 依規則說明「階乘僅適用於 0～12 的非負整數」，這裡直接強制執行這條規則
+// （而不只是寫在文案裡），超過範圍一律視為無效算式。這同時也堵住了用超大階乘
+// 除出一個「趨近於 0 但其實不是 0」的算式來騙過等號判定的漏洞。
 function factorial(n){
-  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return NaN;
-  if (n > 170) return Infinity;
+  if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n) || n > 12) return NaN;
   let r = 1;
   for (let i = 2; i <= n; i++) r *= i;
   return r;
+}
+
+// 任何算式中間值的絕對值上限。單靠階乘上限還不夠——把兩個大階乘乘在一起
+// （例如 9!×9! ≈ 1.3×10^11）一樣可以做出超大分母，讓 A÷超大分母 在數學上明明
+// 不等於 0，卻因為誤差容許範圍而被誤判成「等於 0」。所以任何運算（不只階乘、
+// 次方）算出來的中間值只要超過這個上限，一律視為無效，從源頭擋掉這種算式。
+const MAG_CAP = 1e7;
+function withinBounds(v){ return Number.isFinite(v) && Math.abs(v) <= MAG_CAP; }
+
+// 判斷兩個數值是否應視為相等。用「相對誤差」而不是固定的絕對誤差：數值越大，
+// 容許的浮點誤差也跟著等比例放大（避免大數字因浮點精度被誤判不相等），但數值
+// 趨近 0 時，容許範圍會收斂到一個很小的絕對值（1e-9），不會被大分母的除法騙過。
+function nearlyEqual(a, b, epsRel){
+  epsRel = epsRel || 1e-9;
+  return Math.abs(a - b) < epsRel * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
 // token: {type:'num',value:n} | {type:'op',value:'+'|'-'|'×'|'÷'} | {type:'lparen'} | {type:'rparen'} | {type:'sqrt'} | {type:'fact'}
@@ -1097,7 +1159,8 @@ function evalTokens(tokens){
       pos++;
       const v = parseSqrt();
       if (v < 0) return NaN;
-      return Math.sqrt(v);
+      const r = Math.sqrt(v);
+      return withinBounds(r) ? r : NaN;
     }
     return parsePrimary();
   }
@@ -1106,7 +1169,8 @@ function evalTokens(tokens){
     let v = parseSqrt();
     while (peek() && peek().type === 'fact'){
       pos++;
-      v = factorial(v);
+      const r = factorial(v);
+      v = withinBounds(r) ? r : NaN;
     }
     return v;
   }
@@ -1116,7 +1180,8 @@ function evalTokens(tokens){
     if (peek() && peek().type === 'op' && peek().value === '^'){
       pos++;
       const rhs = parsePower(); // 右結合：2^3^2 = 2^(3^2)
-      v = Math.pow(v, rhs);
+      const r = Math.pow(v, rhs);
+      v = withinBounds(r) ? r : NaN;
     }
     return v;
   }
@@ -1126,7 +1191,8 @@ function evalTokens(tokens){
     while (peek() && peek().type === 'op' && (peek().value === '×' || peek().value === '÷')){
       const op = peek().value; pos++;
       const rhs = parsePower();
-      if (op === '×') v = v * rhs; else v = v / rhs;
+      const r = (op === '×') ? v * rhs : v / rhs;
+      v = withinBounds(r) ? r : NaN;
     }
     return v;
   }
@@ -1136,7 +1202,9 @@ function evalTokens(tokens){
     while (peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')){
       const op = peek().value; pos++;
       const rhs = parseTerm();
-      if (op === '+') v = v + rhs; else v = v - rhs;
+      // + - 不套用倍數型上限：兩個已經各自合法（≤上限）的數值相加，最多也只是
+      // 翻倍，不會像乘方、階乘、乘法那樣暴衝，沒有必要在這裡也擋掉合理的計算。
+      v = (op === '+') ? v + rhs : v - rhs;
     }
     return v;
   }
@@ -1146,18 +1214,75 @@ function evalTokens(tokens){
   return result;
 }
 
+// wrapC 用於 √ 與 ! 這種「一律緊密綁定」的一元運算：只要運算元不是原子值
+// （純數字或已經是一元運算結果），就一定要加括號，否則語意會跑掉。
 function wrapC(cand){ return cand.atomic ? cand.e : '(' + cand.e + ')'; }
 
+// 二元運算子的優先順序（數字越大越優先），用來決定「加減乘除次方」組合時
+// 到底需不需要加括號 —— 例如 5+7÷7 因為 ÷ 優先度比 + 高，本來就不需要加括號，
+// 不必寫成 5+(7÷7)。這樣產生出來的建議答案才會跟一般人手寫的算式一樣簡潔，
+// 複雜度（括號數）的統計也才準確，不會被「用不到的括號」灌水。
+const OP_PREC = { '+':1, '-':1, '×':2, '÷':2, '^':3 };
+function needsWrap(cand, parentPrec, side, parentOp){
+  if (cand.atomic) return false;
+  if (cand.prec < parentPrec) return true;
+  if (cand.prec > parentPrec) return false;
+  // 優先度相同：^ 是右結合，其餘（+ - × ÷）都是左結合
+  if (parentOp === '^') return side === 'left';
+  return side === 'right';
+}
+function combineOp(A, B, op, value){
+  const p = OP_PREC[op];
+  const lw = needsWrap(A, p, 'left', op);
+  const rw = needsWrap(B, p, 'right', op);
+  const e = (lw ? '(' + A.e + ')' : A.e) + op + (rw ? '(' + B.e + ')' : B.e);
+  return { v: value, e, atomic: false, prec: p };
+}
+
+// 候選清單去重＋截斷。這裡的關鍵是「優先讓不同的數值都有代表」：
+// 早期版本只依算式長度排序後截斷，結果一個子集合的名額全被長度短、但數值重複的寫法
+// （5-2÷2、5-2!÷2、5-2÷2! 算出來都是 4）佔滿，長度較長卻是「全新數值」的
+// √(5-2÷2)=2 反而被擠掉 —— 2225 的正解 2=√(5-2÷2) 因此整個搜不到。
+// 所以改成兩階段：先讓每個不同數值各拿一個名額（優先最短寫法），有剩再讓同一個數值
+// 補第二種寫法，這樣新數值永遠不會被同值的短算式洗掉。
+const PER_VALUE = 2;
+function valueKey(v){
+  // 用有效位數當 key，讓浮點誤差下相同的數值歸為一組
+  return v.toPrecision(12);
+}
 function dedupCap(cands, cap){
-  const seen = new Set();
+  // 排序優先權：整數優先，其次才比算式長度。
+  // 這一條是關鍵：像 √2、√√2、√√√2 這類無理數會生出爆量的中間值，把名額洗光，
+  // 害得真正有用的整數（以及它們開根號後的整數）擠不進來。等式幾乎都是靠整數關係成立的，
+  // 所以讓整數先佔位，2225 的 2=√(5-2÷2)、2227 的 2=√√(2×7+2) 這種解法才找得出來。
+  const notInteger = (v)=> Number.isInteger(v) ? 0 : 1;
+  const sorted = cands.slice().sort((a,b)=> notInteger(a.v) - notInteger(b.v) || a.e.length - b.e.length);
+  const seenExpr = new Set();
+  const valueCount = new Map();
   const out = [];
-  cands.sort((a,b)=> a.e.length - b.e.length);
-  for (const c of cands){
-    if (!Number.isFinite(c.v)) continue;
-    if (seen.has(c.e)) continue;
-    seen.add(c.e);
-    out.push(c);
+
+  // 第一輪：每個不同數值只收一個代表（最短的），先把數值覆蓋度衝滿
+  for (const c of sorted){
     if (out.length >= cap) break;
+    if (!withinBounds(c.v)) continue;
+    if (seenExpr.has(c.e)) continue;
+    const k = valueKey(c.v);
+    if (valueCount.has(k)) continue;
+    seenExpr.add(c.e);
+    valueCount.set(k, 1);
+    out.push(c);
+  }
+  // 第二輪：還有名額的話，讓同一個數值最多再補到 PER_VALUE 種寫法
+  for (const c of sorted){
+    if (out.length >= cap) break;
+    if (!withinBounds(c.v)) continue;
+    if (seenExpr.has(c.e)) continue;
+    const k = valueKey(c.v);
+    const n = valueCount.get(k) || 0;
+    if (n >= PER_VALUE) continue;
+    seenExpr.add(c.e);
+    valueCount.set(k, n + 1);
+    out.push(c);
   }
   return out;
 }
@@ -1168,18 +1293,29 @@ function subsetsOf(mask){
   return subs;
 }
 
-// 依「使用工具」擴充候選值：√ 與 ! 屬於一元運算，只在對應選項開啟時套用
-function unaryExtend(cands, opts){
-  const out = cands.slice();
-  for (const c of cands){
-    if (opts.useSqrt && c.v >= 0 && c.v <= 10000){
-      out.push({ v: Math.sqrt(c.v), e: '√' + wrapC(c), atomic: true });
+// 依「使用工具」擴充候選值：√ 與 ! 屬於一元運算，只在對應選項開啟時套用。
+// 這裡會反覆套用到收斂（最多幾輪）而不是只套一次，這樣像 √√x、(x!)! 這種連續疊加
+// 一元運算的寫法才找得到 —— 少了這一步，會把「其實可以解」的車牌誤判成無解。
+function unaryExtend(cands, opts, capPerSubset, rounds){
+  rounds = rounds || 3;
+  let cur = dedupCap(cands.slice(), capPerSubset);
+  for (let r = 0; r < rounds; r++){
+    const seen = new Set(cur.map(c => c.e));
+    const additions = [];
+    for (const c of cur){
+      if (opts.useSqrt && c.v >= 0 && c.v <= 10000){
+        const e = '√' + wrapC(c);
+        if (!seen.has(e)) additions.push({ v: Math.sqrt(c.v), e, atomic: true, prec: null });
+      }
+      if (opts.useFact && Number.isInteger(c.v) && c.v >= 0 && c.v <= 12){
+        const e = wrapC(c) + '!';
+        if (!seen.has(e)) additions.push({ v: factorial(c.v), e, atomic: true, prec: null });
+      }
     }
-    if (opts.useFact && Number.isInteger(c.v) && c.v >= 0 && c.v <= 12){
-      out.push({ v: factorial(c.v), e: wrapC(c) + '!', atomic: true });
-    }
+    if (additions.length === 0) break;
+    cur = dedupCap(cur.concat(additions), capPerSubset);
   }
-  return out;
+  return cur;
 }
 
 // 建立每個數字子集合（非空真子集）在指定工具範圍內可湊出的所有數值／算式
@@ -1191,9 +1327,8 @@ function buildCandidates(digits, opts, capPerSubset){
     let cands;
     if ((mask & (mask - 1)) === 0){
       const idx = Math.log2(mask);
-      let base = [{ v: digits[idx], e: String(digits[idx]), atomic: true }];
-      base = unaryExtend(base, opts);
-      cands = dedupCap(base, capPerSubset);
+      const base = [{ v: digits[idx], e: String(digits[idx]), atomic: true, prec: null }];
+      cands = unaryExtend(base, opts, capPerSubset);
     } else {
       let raw = [];
       for (const A of subsetsOf(mask)){
@@ -1201,20 +1336,19 @@ function buildCandidates(digits, opts, capPerSubset){
         if (A > B) continue;
         const ca = solveMask(A), cb = solveMask(B);
         for (const x of ca) for (const y of cb){
-          raw.push({ v: x.v + y.v, e: wrapC(x) + '+' + wrapC(y), atomic: false });
-          raw.push({ v: x.v - y.v, e: wrapC(x) + '-' + wrapC(y), atomic: false });
-          raw.push({ v: y.v - x.v, e: wrapC(y) + '-' + wrapC(x), atomic: false });
-          raw.push({ v: x.v * y.v, e: wrapC(x) + '×' + wrapC(y), atomic: false });
-          raw.push({ v: x.v / y.v, e: wrapC(x) + '÷' + wrapC(y), atomic: false });
-          raw.push({ v: y.v / x.v, e: wrapC(y) + '÷' + wrapC(x), atomic: false });
+          raw.push(combineOp(x, y, '+', x.v + y.v));
+          raw.push(combineOp(x, y, '-', x.v - y.v));
+          raw.push(combineOp(y, x, '-', y.v - x.v));
+          raw.push(combineOp(x, y, '×', x.v * y.v));
+          raw.push(combineOp(x, y, '÷', x.v / y.v));
+          raw.push(combineOp(y, x, '÷', y.v / x.v));
           if (opts.usePow){
-            raw.push({ v: Math.pow(x.v, y.v), e: wrapC(x) + '^' + wrapC(y), atomic: false });
-            raw.push({ v: Math.pow(y.v, x.v), e: wrapC(y) + '^' + wrapC(x), atomic: false });
+            raw.push(combineOp(x, y, '^', Math.pow(x.v, y.v)));
+            raw.push(combineOp(y, x, '^', Math.pow(y.v, x.v)));
           }
         }
       }
-      raw = unaryExtend(raw, opts);
-      cands = dedupCap(raw, capPerSubset);
+      cands = unaryExtend(dedupCap(raw, capPerSubset), opts, capPerSubset);
     }
     memo.set(mask, cands);
     return cands;
@@ -1226,7 +1360,6 @@ function buildCandidates(digits, opts, capPerSubset){
 // 找出所有「把四個數字拆成左右兩邊、兩邊數值相等」的等式
 function solveEquations(digits, opts, capPerSubset){
   const memo = buildCandidates(digits, opts, capPerSubset || 250);
-  const eps = 1e-6;
   const results = new Set();
   for (let A = 1; A <= 14; A++){
     const B = 15 ^ A;
@@ -1234,7 +1367,7 @@ function solveEquations(digits, opts, capPerSubset){
     const candA = memo.get(A), candB = memo.get(B);
     for (const x of candA){
       for (const y of candB){
-        if (Number.isFinite(x.v) && Number.isFinite(y.v) && Math.abs(x.v - y.v) < eps){
+        if (Number.isFinite(x.v) && Number.isFinite(y.v) && nearlyEqual(x.v, y.v)){
           results.add(x.e + '=' + y.e);
           results.add(y.e + '=' + x.e);
         }
@@ -1245,10 +1378,9 @@ function solveEquations(digits, opts, capPerSubset){
 }
 
 // 分級難度評分：
-//   只需 +-×÷ 即可解出 → 偏易（1～2 星，依解法數量細分）
-//   需要 √ 或 ^ 才能解出 → 中等（3 星）
-//   需要 ! （階乘）才能解出 → 偏難（4 星）
-//   目前找不到已知解法 → 極限難度（5 星）
+//   工具門檻：只需 +-×÷ → 偏易；需要 √ 或 ^ → 中等；需要 !（階乘）→ 偏難；都找不到解 → 極限難度
+//   在同一個工具門檻內，再用「解法數量」與「算式複雜度（尤其是括號層數）」細分星等：
+//   解法越少、需要的括號越多，代表算式越複雜、越不容易想到，星等就越高。
 const TIER_LABEL = {
   basic: '只需要加減乘除即可解出',
   medium: '需要用到開根號或次方才能解出',
@@ -1256,23 +1388,101 @@ const TIER_LABEL = {
   none: '目前找不到已知解法（可能是極限難度車牌）',
 };
 
+function parenCount(expr){ return (expr.match(/\(/g) || []).length; }
+function opCount(expr){ const m = expr.match(/[+\-×÷^√!]/g); return m ? m.length : 0; }
+
+// 從一批等式解法中，統計解法總數與「最少括號層數」，當作難度分數的依據
+function summarizeSolutions(list){
+  let minParens = Infinity;
+  for (const e of list){
+    const p = parenCount(e);
+    if (p < minParens) minParens = p;
+  }
+  return { count: list.length, minParens };
+}
+
+// 挑選「看起來最簡單」的一個解法當作示範：優先比運算符號數量（+-×÷^√!都算一個），
+// 運算符號數一樣多時再比括號數，最後比字串長度。只用括號數來挑會選出像
+// 「4÷√√2=√√√4^7」這種括號剛好是 0、但疊了一堆根號的怪解法，反而比
+// 「(7-4)!=2+4」這種只用 3 個符號的解法看起來更複雜，所以改用符號數為主。
+// 連續疊加的一元運算（√√9、2!! 之類）雖然數學上成立，但對人來說既難讀也不像
+// 正常會寫出來的算式，所以在挑範例時給它一個很重的penalty，讓「用一次根號就好」
+// 的解法一定排在「疊兩三層根號」的前面。
+function stackedUnaryCount(expr){
+  const m = expr.match(/√√|!!/g);
+  return m ? m.length : 0;
+}
+
+function pickBestExample(list){
+  let best = null, bestStack = Infinity, bestOps = Infinity, bestParens = Infinity;
+  for (const e of list){
+    const stack = stackedUnaryCount(e);
+    const ops = opCount(e);
+    const parens = parenCount(e);
+    if (stack < bestStack ||
+        (stack === bestStack && ops < bestOps) ||
+        (stack === bestStack && ops === bestOps && parens < bestParens) ||
+        (stack === bestStack && ops === bestOps && parens === bestParens && (!best || e.length < best.length))){
+      best = e; bestStack = stack; bestOps = ops; bestParens = parens;
+    }
+  }
+  return best;
+}
+
+// 解法數量帶來的難度分數：解法越稀少，分數越高（越難）
+function countPenalty(count){
+  if (count >= 30) return 0;
+  if (count >= 15) return 1;
+  if (count >= 6) return 2;
+  if (count >= 2) return 3;
+  return 4;
+}
+
+// 複雜度帶來的難度分數：每多一層括號，分數 +2（括號是使用者最在意的複雜度訊號）
+function complexityPenalty(minParens){ return minParens * 2; }
+
+function scoreToStars(score){
+  if (score <= 1) return 1;
+  if (score <= 3) return 2;
+  if (score <= 6) return 3;
+  if (score <= 8) return 4;
+  return 5;
+}
+
+function describeTier(tier, minParens){
+  let label = TIER_LABEL[tier];
+  if (tier !== 'none' && minParens >= 1){
+    label += '，且算式至少需要 ' + minParens + ' 層括號';
+  }
+  return label;
+}
+
 function ratePuzzle(digits){
   const basic = solveEquations(digits, { useSqrt:false, usePow:false, useFact:false }, 250);
   if (basic.length > 0){
-    const example = basic.slice().sort((a,b)=>a.length-b.length)[0];
-    return { stars: basic.length >= 15 ? 1 : 2, tier:'basic', example };
+    const s = summarizeSolutions(basic);
+    const score = 0 + countPenalty(s.count) + complexityPenalty(s.minParens);
+    return { stars: scoreToStars(score), tier:'basic', example: pickBestExample(basic), minParens: s.minParens };
   }
+
   const medium = solveEquations(digits, { useSqrt:true, usePow:true, useFact:false }, 150);
-  if (medium.length > 0){
-    const example = medium.slice().sort((a,b)=>a.length-b.length)[0];
-    return { stars: 3, tier:'medium', example };
+  // 上限拉到 500：300 的時候搜尋會在中途被截斷，害得像 2247 這種車牌只剩下
+  // 疊兩層根號的醜解法，漏掉了 2+4=√(2+7)! 這種更直觀的答案。
+  const hard = solveEquations(digits, { useSqrt:true, usePow:true, useFact:true }, 500);
+  if (hard.length === 0){
+    return { stars: 5, tier:'none', example: null, minParens: null };
   }
-  const hard = solveEquations(digits, { useSqrt:true, usePow:true, useFact:true }, 60);
-  if (hard.length > 0){
-    const example = hard.slice().sort((a,b)=>a.length-b.length)[0];
-    return { stars: 4, tier:'hard', example };
-  }
-  return { stars: 5, tier:'none', example: null };
+
+  // 挑出整個工具箱（含階乘）裡最簡單的一個當範例，再回頭看「這個範例實際用到什麼」
+  // 來決定難度標籤 —— 這樣標籤（例如「需要階乘」）才會跟顯示出來的範例完全一致，
+  // 不會出現「標籤說只要根號，範例卻用了階乘」這種矛盾。
+  const example = pickBestExample(hard);
+  const tier = example.includes('!') ? 'hard' : 'medium';
+  const pool = tier === 'hard' ? hard : medium;
+  const s = summarizeSolutions(pool);
+  const base = tier === 'hard' ? 7 : 4;
+  const score = base + countPenalty(s.count) + complexityPenalty(s.minParens);
+  return { stars: scoreToStars(score), tier, example, minParens: s.minParens };
 }
 
 /* ======================================================================
@@ -1312,7 +1522,7 @@ function ensureSuggestedEntry(key, digits){
   const rating = ratePuzzle(digits);
   suggestedStore[key] = {
     stars: rating.stars,
-    tierLabel: TIER_LABEL[rating.tier],
+    tierLabel: describeTier(rating.tier, rating.minParens),
     answers: rating.example ? [rating.example] : [],
   };
   saveSuggestedToLS();
@@ -1326,6 +1536,41 @@ function addSolutionToSuggested(key, exprStr){
     entry.answers.push(exprStr);
     saveSuggestedToLS();
   }
+}
+
+/* ======================================================================
+   2b. 指定難度出題：0000–9999 每一組的星等難度是固定的（只跟數字本身有關，
+       跟誰在玩、玩幾次都無關），所以直接把算好的結果內建在程式碼裡，一次到位，
+       完全不用等、也不用在瀏覽器裡重算。
+   ====================================================================== */
+
+// 索引 n 代表車牌「0000」加 n；字元 '1'~'5' 就是那張車牌的難度星等。
+const PRECOMPUTED_STAR_MAP = "2222222222112222222212122222221221222222122212222212222122221222221222122222212212222222121222222221111111111111122222221111333333121113333312311133331233111333123331113312333311131233333111123333331111111111111111333333112212222211223113331313231414132132314313211323131323413231132314132313234331321111111111121113333311223113331122221221113223313313123234141311332341133214323413323143231331341432111111111112311133331313231414113223313311222222121133223331131323233413412332331313133323134321433211111111111233111333132132314313123234141133223331112222222211333223331314323234134132332313341234321111111111123331113313211323131311332341131323233411333223331122222222113333223313143323231331432332111111111112333311131323413231133214323413412332331314323234113333223311222222221133333223131434323211111111111233333111132314132313323143231313133323134132332313143323231133333223112222222211333333221111111111123333331113234331321331341432134321433213341234321331432332131434323211333333221122222222212222222211122222221111333333121113333312311133331233111333123331113312333311131233333111123333331111122222221212333333111113333322111123332311111323233111113323321111132333311111233323111123333331112111333333111113333311211123331112111222311121111233111211123321112111333211121133321111213332221112221113333322111123331112111222112331112111133311123111333111321113331133211133313322111333332121113322311133332311111323311121111211133311121123333111111333331131113333313311133333321111333333221113332233111333233111113333111211123111333111111333331111233333311113333333311133333333111333333321113333223331113323321111133321112111321113331131113333311113333333112333333311133333333111333333331113333322333311132333311111333211121133211133313311133333311133333311133333331123333333111333333331113333332233333111233323111133321111213322111333321111333333111333333111333333111333333311233333331113333333223333331123333331113332221112332121113333221113333321113333331113333331113333331113333333112333333322122222221111333333111212222211223113331313231413132132314313211323131323313231132314132313233341322111333333111113333311211113331112111222311121111233111211123311112111333211121133321111213332221112111212222211211123332222332423212114312311311223132134211321222321122323313321232322122212233331332121223113331112111222212114311322121332123111211331114312124211331111313212321213321134312132321213122313231413311121111211311213133111211331221223141331213321331111123213413341233111131313233231333133232132314333111211122134211311114312124231213321332212325313311125422111321323424114312432321233122323211323133311112111222311122311331111311111123213311125422122113425323121225423112312323341313123332323313231333211121123313321233212321213413341233111321323423121225423221233424331213424421133123323232314132333321111212322112212321134312111131313234114312432112312323331213424422212233423312132323323233341323332221112233331332132321213123231333133321233122341313123331133123323312132323322123333322221222222121113333311223113331121221221113223313313123234131311332341133214323313323143231331341432221113333322111123331112111222112331112111133311123111333111321113331133211133313322111333332121113321223113331112111222212114312322111332113111211331114312124211331111313212321213322134312132311213121121221221112331112122111332122322242432231211344221341114441132411242212444212422133442121122242421213223313311133311123111211331231211344123212134233311121223311331111311344212123133121121321133321223123234133111333111114312124221341114443311121223232124414333111442124124212421114424124241243321242311332341321113331111331111311132411242311431111333111442122311144421331212444241341124441112321241233214323333211133313212321213212444212411344212124124212421331212444223212444433312124444413421234423323143233322111333322134312122133442123133221121114424124241341124443312124444232124443333121244332331341432332121113332311213121122142421321134321241244321241112321241413421234433121244332321241433222212222212311133331313231413113223313311221222121133223331131323233313412332331313133323133321433222311133332311111323311121111211133311121123333111111333331131113333313311133333321111333333221113332313231413311121111211311223133111211431221223141331213321331111123213413441233111131313233231333133213223313311133311123111211431231211444223212144133311121223311431111411444212123134121121321133421211221222121123333111221223141323212144232322223433233121233323143212232144432122111233221221333332212133223331111333331131213321333311121223233121233323321213333321212133331233121331323331211133333312231323233331113333311121123213311431111423143212233321212133233112351133212154313311231323413433113423412332333311133333413441233111444212122144432122331233121333212154312332124333333121334233122313232313133323321111333311131313233134121121111133221231323331213311231323333121334223221224433331213233233321433233221113333231333133321233421221333332211133333312413433113433122313233331213233233212433322222122221233111333132132314313123234141133223331112221222211333223331314323234134132332313341234322233111333233111113333111211123111333111111333331111233333311113333333311133333333111333333321113333232132314333111211122134211321114312124231213321332212325313311125422111321323424114312432321233122323123234143111333111114312124221341114443311121223232124414333111442124124212421114424124241243321242133223331111333331131213321333311121223233121233323321213333321212133331233121331323331211133333312112221222211233333312212325313232124414323321213332324222434234412125423313421232314335212213334432121333223331113333333311124422133111442123321212133234412125423442121543322121213332135512133123443122314323234311133333311321323424124212421331233121323313421233322121213233421235133421215434321333133234132332333111333334124312432114424124231323331212314335212332135512133421215432334212433332212133323341234323321113333321233122341243321241133333312213334432133123443124321333133332212133323342123342222221222123331113313211323141311332341131323233411333223331122221222113333223313143323231341432332223331113323321111133321112111321113331131113333311113333333112333333311133333333111333333331113333323211323133311112111222321122311331111311111123213311124422122113425323121225423112312323341313123332311332341321113331111331111311132411242311431111333111442122311144421331212444241341124441112321241231323233431113333311121123213311431111423143212233321212133233112351133212154313311231323413433113421333223331113333333311124422133111442123321212133234412125423442121543322121213332135512133123443121122221222112333333322113425322311144421233112351123442121542324322234235451212423321532122321144421213333223311133333333121225423331212444233212154313322121213235451212423444212143324312121333213441223143323233111333333112312323341341124443311231323332135512123321532123324312121233422123433343121442341432332331113333341313123331112321241413433113433123443122321144421333213441233343121442331421243222222212212333311131323413231133214323413412332331314323234113333223311222221221133333223131434323222333311132333311111333211121133211133313311133333311133333311133333331123333333111333333331113333332323413231333211121123413321233212321213413341233111321323423121225423221233424331213424421133123323233214323433211133313212321213212434212411344212124124212421331212444223212444433312124444413421233323412332333311133333413341233111344212122144432122331233121333212154312332124333333121334233122313232314323234311133333311321323424124212421331233121323313421233322121213233421235133421215434321333133213333223311133333333121225423331212444233212154313322121213235451212423444212143324312121333213441211222221221123333333221233424323212444432332124333233421235123444212142324332224234435121223333144212133333223111333333331213424423312124444333121334233421215433324312121234435121223444421213324231212231434323231113333331133123323413421234333122313234321333133333213441223333144213324231212233333212322222222121233333111132314132313323143231313133323134132332313143323231133333223112222221211333333222233333111233323111133321111213322111333321111333333111333333111333333111333333311233333331113333333232314132333321111212322122212321134312111131313234114312432112312323331213424422212233423312132323323323143233322111333322134312122133442123133221121114424124241341124443312124444232124443333121243332313133323321111333311131313233134121121111233221231323331213311231323333121334223221224333331213233234132332333111333334124312432114424124231323331212314335212332135512133421215432334212433332212133323143323233111333333112312323341341124443311231323332135512123321532123324312121233422123433343121442133333223111333333331213424423312124444333121334233421215433324312121234435121223444421213324231212112222221211233333332212233423232124443323221224332334212433233422123423444421212323333222233333412121333333221113333333312132323333121244333331213233332212133333343121443324231212233333412123333342122222222221123333331113234441321331341432134321433213441234321341432332131434323211333333221122222221223333331123333331113332221112332121113333221113333321113333331113333331113333331113333333112333333323234441323332221112233331332132321213124231333133421233122341313123331133123323312132323322123333322331341432332121113332311213121122242421321134321241244321241112321241413421234433121244332321241433234321433233221113334231333133321234421221333332211134333312413333113433122313233331213233233212433323441234323321113333421233122341244321241134333312213334432133123443124321333133332212133323342123342341432332331113333341313123331112321241413333113433123443122321144421333213441233343121442331421243231434323231113333331133123323413421234333122313234321333133333213441223333144213324231212233333212321333333221113333333312132323333121244333331213233332212133333343121443324231212233333412123333342121122222221112333333322123333322321241433233212433323342123342331421243233333212323333342122323343422";
+
+let starBuckets = null; // { '1':[keys...], '2':[...], ... }
+
+function bucketsFromMapString(str){
+  const buckets = { '1':[], '2':[], '3':[], '4':[], '5':[] };
+  for (let n = 0; n < 10000; n++){
+    const s = str[n];
+    if (buckets[s]) buckets[s].push(String(n).padStart(4, '0'));
+  }
+  return buckets;
+}
+
+function renderDifficultyPicker(){
+  const buttons = el.dpButtons.querySelectorAll('.dp-btn');
+  buttons.forEach(b=>{
+    const list = starBuckets[b.dataset.star] || [];
+    b.disabled = list.length === 0;
+    b.textContent = '★' + b.dataset.star + '（' + list.length + '）';
+  });
+}
+
+function ensureStarMap(){
+  if (starBuckets) return;
+  starBuckets = bucketsFromMapString(PRECOMPUTED_STAR_MAP);
+  renderDifficultyPicker();
 }
 
 /* ======================================================================
@@ -1344,7 +1589,13 @@ const state = {
   muted: false,
   sfxVolume: 0.7,
   musicVolume: 0.55,
+  platePrefix: 'KPH',
 };
+
+const PLATE_PREFIXES = ['KPH','TWN','ACE','PRO','CPU','NUM','WIZ','TOP'];
+function randomPlatePrefix(){
+  return PLATE_PREFIXES[Math.floor(Math.random() * PLATE_PREFIXES.length)];
+}
 
 const SETTINGS_KEY = 'plate24_settings_v1';
 function loadSettings(){
@@ -1440,6 +1691,8 @@ const el = {
   solvedCount: document.getElementById('solvedCount'),
   atlasSelectedLabel: document.getElementById('atlasSelectedLabel'),
   btnExport: document.getElementById('btnExport'),
+  difficultyPicker: document.getElementById('difficultyPicker'),
+  dpButtons: document.getElementById('dpButtons'),
   atlasFilter: document.getElementById('atlasFilter'),
   atlasJump: document.getElementById('atlasJump'),
   btnAtlasJump: document.getElementById('btnAtlasJump'),
@@ -1596,7 +1849,9 @@ el.btnFullscreenToggle.addEventListener('click', toggleFullscreen);
    ====================================================================== */
 
 function renderHero(){
-  el.plateDigits.innerHTML = state.digits.map((d,i)=>`<span class="d" data-idx="${i}">${d}</span>`).join('');
+  const prefixHtml = `<span class="plate-prefix">${state.platePrefix}-</span>`;
+  const digitsHtml = state.digits.map((d,i)=>`<span class="d" data-idx="${i}">${d}</span>`).join('');
+  el.plateDigits.innerHTML = prefixHtml + digitsHtml;
   el.starDisplay.innerHTML = Array.from({length:5},(_,i)=>`<span class="${i<state.stars?'on':''}">★</span>`).join('');
 }
 
@@ -1634,7 +1889,7 @@ function renderExpr(){
     if (parenBalance() === 0 && !expectingOperand() && rightTokens.length > 0){
       try { rightVal = evalTokens(rightTokens); rightOk = true; } catch(e){ rightOk = false; }
     }
-    const matched = leftOk && rightOk && Number.isFinite(leftVal) && Number.isFinite(rightVal) && Math.abs(leftVal - rightVal) < 1e-6;
+    const matched = leftOk && rightOk && Number.isFinite(leftVal) && Number.isFinite(rightVal) && nearlyEqual(leftVal, rightVal);
     el.resultLine.innerHTML =
       `<span class="rl-label">左邊</span><span class="val">${leftOk ? formatNum(leftVal) : '—'}</span>` +
       `<span class="rl-label">右邊</span><span class="val ${matched ? 'hit' : ''}">${rightOk ? formatNum(rightVal) : '…'}</span>`;
@@ -1753,6 +2008,7 @@ function setPuzzle(key){
   state.digits = key.split('').map(Number);
   state.used = [false,false,false,false];
   state.tokens = [];
+  state.platePrefix = randomPlatePrefix();
 
   ensureSuggestedEntry(key, state.digits);
   const entry = suggestedStore[key];
@@ -1775,7 +2031,7 @@ function chooseNumber(key, opts){
   setPuzzle(key);
   state.selectedIdx = parseInt(key, 10);
   drawAtlas();
-  el.atlasSelectedLabel.textContent = '目前選取：' + key;
+  el.atlasSelectedLabel.textContent = '目前選取：' + state.platePrefix + '-' + key;
   updateAtlasDetail(key);
   sfxSelect();
   if (opts.scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1868,7 +2124,7 @@ function submitAnswer(){
     setFeedback('這個算式無法計算（可能除以 0 或對負數開根號）。', 'err'); return;
   }
 
-  if (Math.abs(leftVal - rightVal) < 1e-6){
+  if (nearlyEqual(leftVal, rightVal)){
     const exprStr = tokensToString(state.tokens);
     if (!storage[state.puzzleKey]) storage[state.puzzleKey] = [];
     const isNew = !storage[state.puzzleKey].includes(exprStr);
@@ -2050,6 +2306,15 @@ function exportSolvedToTxt(){
 }
 el.btnExport.addEventListener('click', exportSolvedToTxt);
 
+el.dpButtons.addEventListener('click', e=>{
+  const btn = e.target.closest('.dp-btn');
+  if (!btn || btn.disabled || !starBuckets) return;
+  const list = starBuckets[btn.dataset.star];
+  if (!list || list.length === 0) return;
+  const key = list[Math.floor(Math.random() * list.length)];
+  chooseNumber(key, { scroll:false });
+});
+
 el.atlasFilter.addEventListener('click', e=>{
   const btn = e.target.closest('button[data-f]');
   if (!btn) return;
@@ -2091,6 +2356,9 @@ function startGame(){
   const startIdx = Math.floor(Math.random() * 10000);
   chooseNumber(String(startIdx).padStart(4, '0'), { scroll:false });
   updateAtlasStats();
+
+  // 難度資料是內建好的，這裡只是把它展開成 5 個難度的清單，瞬間完成
+  ensureStarMap();
 }
 
 el.btnStart.addEventListener('click', startGame);
