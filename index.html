@@ -592,7 +592,7 @@
   }
 
   /* ---------- start screen ---------- */
-  #startScreen{
+  #startScreen, #lobbyScreen{
     min-height:100vh;
     min-height:100dvh;
     display:flex;
@@ -605,34 +605,34 @@
     padding-bottom:max(clamp(24px, 8vw, 40px), env(safe-area-inset-bottom, 0px));
     gap:clamp(14px, 4vw, 22px);
   }
-  #startScreen .logo-plate{
+  #startScreen .logo-plate, #lobbyScreen .logo-plate{
     background:var(--plate-white);
     border:3px solid var(--ink);
     border-radius:var(--radius-plate);
     padding:20px 30px 14px;
     box-shadow: inset 0 0 0 5px var(--plate-white), inset 0 0 0 6px var(--ink);
   }
-  #startScreen .logo-plate .big{
+  #startScreen .logo-plate .big, #lobbyScreen .logo-plate .big{
     font-family:'Oswald', sans-serif;
     font-weight:700;
     font-size:clamp(32px, 11vw, 44px);
     color:var(--ink);
     letter-spacing:2px;
   }
-  #startScreen .logo-plate .tag{
+  #startScreen .logo-plate .tag, #lobbyScreen .logo-plate .tag{
     font-size:11px;
     letter-spacing:1px;
     color:#6B6858;
     margin-top:4px;
   }
-  #startScreen h1{
+  #startScreen h1, #lobbyScreen h1{
     font-family:'Oswald', sans-serif;
     font-weight:600;
     font-size:clamp(20px, 6.5vw, 26px);
     margin:0;
     color:var(--go-text);
   }
-  #startScreen p.desc{
+  #startScreen p.desc, #lobbyScreen p.desc{
     max-width:360px;
     font-size:14px;
     line-height:1.8;
@@ -654,11 +654,11 @@
   }
   .btn-start:hover{ background:#FFC724; }
   .btn-start:active{ transform:translateY(3px); box-shadow:0 1px 0 #B8890A; }
-  #startScreen .hint-audio{
+  #startScreen .hint-audio, #lobbyScreen .hint-audio{
     font-size:12px;
     color:var(--dim-text);
   }
-  #startScreen .credit{
+  #startScreen .credit, #lobbyScreen .credit{
     font-size:12px;
     color:var(--dim-text);
     margin-top:6px;
@@ -918,7 +918,7 @@
   @media (min-width:700px){
     .mode-picker{ flex-direction:row; max-width:min(92vw, 760px); }
     .mode-card{ flex:1; }
-    #startScreen p.desc{ max-width:560px; }
+    #startScreen p.desc, #lobbyScreen p.desc{ max-width:560px; }
   }
   /* 寬螢幕（電腦／平板／手機橫向）：左右兩欄 */
   @media (min-width:760px), (orientation:landscape) and (min-width:560px){
@@ -961,9 +961,17 @@
     header .sub{ display:none; }
     .tabbar{ margin-top:8px; }
     .tab-btn{ padding:7px 0; }
-    #startScreen{ gap:10px; padding-top:12px; padding-bottom:12px; }
-    #startScreen .logo-plate{ padding:8px 20px 6px; }
+    #startScreen, #lobbyScreen{ gap:10px; padding-top:12px; padding-bottom:12px; }
+    #startScreen .logo-plate, #lobbyScreen .logo-plate{ padding:8px 20px 6px; }
   }
+  .lobby-tools{ display:flex; gap:12px; width:100%; max-width:min(92vw, 760px); }
+  .lobby-btn{ flex:1; background:var(--asphalt-3); color:var(--go-text); border:2px solid var(--line-dim); border-radius:12px; padding:12px 8px; font-size:16px; font-weight:700; transition:transform .08s,border-color .15s; }
+  .lobby-btn:hover{ border-color:var(--signal-yellow); } .lobby-btn:active{ transform:scale(.97); }
+  #btnStart{ font-size:clamp(18px, 4.5vw, 24px); padding:16px 36px; }
+  body.in-lobby #howtoEq, body.in-lobby #howto24, body.in-lobby #settingsOverlay .modal-divider{ display:none; }
+  .about-body{ font-size:14px; line-height:1.8; color:var(--go-text); }
+  .about-body h4{ margin:14px 0 4px; color:var(--signal-yellow); font-size:15px; }
+  .about-body p{ margin:0 0 6px; color:var(--dim-text); }
 </style>
 </head>
 <body>
@@ -974,36 +982,27 @@
     <div class="tag">TAIWAN · EQUATION</div>
   </div>
   <h1>車牌計算挑戰</h1>
+  <p class="desc">點擊下方按鈕開始遊戲，將啟用音樂與音效。</p>
+  <button class="btn-start" id="btnStart">🔑 發動引擎，開始</button>
+  <p class="hint-audio">點擊開始後會播放音樂並進入全螢幕，之後可在大廳的「設定」調整</p>
+  <p class="credit">作者：郭柏宏　版本：20260910</p>
+</div>
+
+<div id="lobbyScreen" style="display:none;">
+  <div class="logo-plate"><div class="big">2468</div><div class="tag">TAIWAN · LOBBY</div></div>
+  <h1>遊戲大廳</h1>
   <p class="desc">請選擇遊戲模式。兩個模式的破解圖鑑各自獨立計算。</p>
   <div class="mode-picker">
     <button class="mode-card" data-mode="eq"><b>⚖️ 等式平衡</b><span>把四個數字分成左右兩邊，讓等號左右真正相等。</span></button>
     <button class="mode-card" data-mode="24"><b>🎯 湊出 24</b><span>用四個數字算出 24，還能用「連號」：數字鍵連續點、中間不加運算符號，順序自由（例如 2411 可排出 24、42、124…）。</span></button>
   </div>
-  <p class="hint-audio">點擊模式即會播放遊戲音樂與音效，並自動進入全螢幕</p>
+  <div class="lobby-tools">
+    <button class="lobby-btn" id="btnLobbySettings">⚙️ 設定</button>
+    <button class="lobby-btn" id="btnAbout">ℹ️ 關於</button>
+  </div>
   <p class="credit">作者：郭柏宏　版本：20260910</p>
 </div>
 
-<div class="wrap" id="gameScreen" style="display:none;">
-
-  <header>
-    <div class="header-top">
-      <div>
-        <p class="title" id="hdrTitle">車牌計算挑戰</p>
-        <p class="sub" id="hdrSub">隨機抽出一張車牌，讓等號兩邊真正相等。點右上角 ⚙️ 查看詳細玩法與範例。</p>
-      </div>
-      <div class="header-btns">
-        <button id="btnHome" title="回到大廳">🏠</button>
-        <button id="btnMute" title="靜音切換">🔊</button>
-        <button id="btnAdminHelp" title="建議答案">?</button>
-        <button id="btnSettings" title="設定">⚙️</button>
-      </div>
-    </div>
-  </header>
-
-  <div class="tabbar" id="tabbar">
-    <button class="tab-btn active" data-tab="play">🎮 遊戲</button>
-    <button class="tab-btn" data-tab="atlas">🗺️ 圖鑑</button>
-  </div>
 
   <!-- SETTINGS MODAL -->
   <div class="modal-overlay" id="settingsOverlay">
@@ -1076,6 +1075,46 @@
       </div>
       <button class="btn primary btn-fullscreen" id="btnFullscreenToggle">⛶ 切換全螢幕</button>
     </div>
+  </div>
+
+  <!-- ABOUT MODAL -->
+  <div class="modal-overlay" id="aboutOverlay">
+    <div class="modal-card modal-card-wide">
+      <div class="modal-head"><h3>ℹ️ 關於</h3><button class="modal-close" id="btnAboutClose">✕</button></div>
+      <div class="about-body">
+        <p>《車牌計算挑戰》：隨機抽出一張四位數車牌，用加減乘除、括號、次方、開根號與階乘玩數字遊戲，並把破解過的號碼收進圖鑑（0000–9999）。</p>
+        <h4>⚖️ 等式平衡</h4>
+        <p>把四個數字分成左右兩邊，讓等號兩邊真正相等。</p>
+        <h4>🎯 湊出 24</h4>
+        <p>用四個數字算出 24。可用「連號」：連續點數字鍵、中間不加運算符號，接成多位數（順序自由）。</p>
+        <h4>圖鑑</h4>
+        <p>兩個模式的破解紀錄各自獨立，資料存在這台裝置的瀏覽器中。</p>
+        <h4>製作</h4>
+        <p>作者：郭柏宏　版本：20260910</p>
+      </div>
+    </div>
+  </div>
+
+<div class="wrap" id="gameScreen" style="display:none;">
+
+  <header>
+    <div class="header-top">
+      <div>
+        <p class="title" id="hdrTitle">車牌計算挑戰</p>
+        <p class="sub" id="hdrSub">隨機抽出一張車牌，讓等號兩邊真正相等。點右上角 ⚙️ 查看詳細玩法與範例。</p>
+      </div>
+      <div class="header-btns">
+        <button id="btnHome" title="回到大廳">🏠</button>
+        <button id="btnMute" title="靜音切換">🔊</button>
+        <button id="btnAdminHelp" title="建議答案">?</button>
+        <button id="btnSettings" title="設定">⚙️</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="play">🎮 遊戲</button>
+    <button class="tab-btn" data-tab="atlas">🗺️ 圖鑑</button>
   </div>
 
   <!-- ADMIN SUGGESTED ANSWER MODAL -->
@@ -2563,13 +2602,11 @@ function applyModeUI(){
 }
 
 function enterMode(mode){
-  el.startScreen.style.display = 'none';
-  el.gameScreen.style.display = 'block';
+  showScreen('game');
   if (!gameStarted){
     gameStarted = true;
     ensureAudioCtx();
     el.btnMute.textContent = state.muted ? '🔇' : '🔊';
-    requestFullscreenSafe();
     initAtlasCanvas();
     ensureStarMap(); // 等式平衡的難度資料是內建好的
   }
@@ -2581,16 +2618,35 @@ function enterMode(mode){
   el.tabbar.querySelector('[data-tab="play"]').click();
   chooseNumber(String(Math.floor(Math.random() * 10000)).padStart(4, '0'), { scroll:false });
   updateAtlasStats();
+}
+
+function showScreen(name){                  // splash 初始頁 → lobby 大廳 → game 遊戲
+  document.getElementById('startScreen').style.display = name === 'splash' ? '' : 'none';
+  document.getElementById('lobbyScreen').style.display = name === 'lobby' ? '' : 'none';
+  el.gameScreen.style.display = name === 'game' ? 'block' : 'none';
+  document.body.classList.toggle('in-lobby', name === 'lobby');
   window.scrollTo(0, 0);
 }
 
 function goHome(){
   closeSettings(); closeAdmin();
-  el.gameScreen.style.display = 'none';
-  el.startScreen.style.display = '';
+  showScreen('lobby');
   playMusic('lobby');
-  window.scrollTo(0, 0);
 }
+
+// 初始頁：這一下點擊讓瀏覽器允許發聲，隨後進入大廳
+document.getElementById('btnStart').addEventListener('click', ()=>{
+  ensureAudioCtx();
+  el.btnMute.textContent = state.muted ? '🔇' : '🔊';
+  requestFullscreenSafe();
+  playMusic('lobby');
+  showScreen('lobby');
+});
+document.getElementById('btnLobbySettings').addEventListener('click', openSettings);
+const aboutOverlay = document.getElementById('aboutOverlay');
+document.getElementById('btnAbout').addEventListener('click', ()=> aboutOverlay.classList.add('show'));
+document.getElementById('btnAboutClose').addEventListener('click', ()=> aboutOverlay.classList.remove('show'));
+aboutOverlay.addEventListener('click', e=>{ if (e.target === aboutOverlay) aboutOverlay.classList.remove('show'); });
 
 document.querySelectorAll('.mode-card').forEach(b => b.addEventListener('click', ()=> enterMode(b.dataset.mode)));
 el.btnHome.addEventListener('click', goHome);
